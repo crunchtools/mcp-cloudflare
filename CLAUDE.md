@@ -48,63 +48,95 @@ claude mcp add mcp-cloudflare-crunchtools \
    - Click "Get started" next to "Create Custom Token"
 
 4. **Configure Token Name**
-   - Enter a descriptive name like "MCP Cloudflare CrunchTools"
+   - Enter: `mcp-cloudflare-crunchtools`
 
-5. **Set Permissions** (based on your needs)
+5. **Configure Permissions**
 
-   Choose ONE of these permission sets:
+   The Permissions section has three dropdowns per row:
+   - **First dropdown**: Resource type (`Account` or `Zone`)
+   - **Second dropdown**: Specific permission category
+   - **Third dropdown**: Access level (`Read` or `Edit`)
 
-   #### Read-Only (Safest - for viewing only)
-   | Permission | Access |
-   |------------|--------|
-   | Zone | Zone | Read |
-   | Zone | DNS | Read |
+   Click "+ Add more" to add each permission row.
 
-   #### DNS Management (for managing DNS records)
-   | Permission | Access |
-   |------------|--------|
-   | Zone | Zone | Read |
-   | Zone | DNS | Edit |
+   #### For Full Management (recommended), add these permissions:
 
-   #### Full Management (all features)
-   | Permission | Access |
-   |------------|--------|
+   | Resource | Permission | Access |
+   |----------|------------|--------|
    | Zone | Zone | Read |
    | Zone | DNS | Edit |
    | Zone | Page Rules | Edit |
    | Zone | Transform Rules | Edit |
    | Zone | Cache Purge | Purge |
 
-6. **Set Zone Resources**
-   - "Include" → "Specific zone" → Select your domain(s)
-   - Or "Include" → "All zones" (if managing multiple domains)
+   **To add each permission:**
+   1. Click "+ Add more" under Permissions
+   2. In the first dropdown, select "Zone"
+   3. In the second dropdown, select the permission (e.g., "DNS")
+   4. In the third dropdown, select "Edit" (or "Read" for read-only)
+   5. Repeat for each permission needed
 
-7. **Set IP Filtering (Optional but Recommended)**
-   - Add your IP address for additional security
-   - Or leave blank to allow from any IP
+6. **Configure Zone Resources**
+   - Under "Zone Resources", you'll see two dropdowns
+   - First dropdown: Select "Include"
+   - Second dropdown: Select "All zones" or "Specific zone"
+   - If "Specific zone", select your domain(s) from the list
 
-8. **Set TTL (Optional)**
-   - Set an expiration date if desired
-   - Or leave blank for no expiration
+7. **Configure Client IP Address Filtering (Optional)**
+   - Click "Use my IP" button to restrict token to your current IP
+   - Or leave blank to allow from any IP address
+   - This adds security but may break if your IP changes
 
-9. **Create and Copy Token**
-   - Click "Continue to summary"
-   - Review permissions
+8. **Configure TTL (Optional)**
+   - Set Start Date and End Date to limit token lifetime
+   - Leave blank for no expiration
+
+9. **Create Token**
+   - Scroll down and click "Continue to summary"
+   - Review all permissions
    - Click "Create Token"
-   - **IMPORTANT: Copy the token immediately** - it won't be shown again
 
-10. **Use the Token**
+10. **Copy Your Token**
+    - **IMPORTANT: Copy the token immediately!**
+    - The token is only shown once - you cannot retrieve it later
+    - Store it securely (password manager recommended)
+
+11. **Add to Claude Code**
     ```bash
     claude mcp add mcp-cloudflare-crunchtools \
         --env CLOUDFLARE_API_TOKEN=your_copied_token \
         -- uvx mcp-cloudflare-crunchtools
     ```
 
+### Permission Sets by Use Case
+
+#### Read-Only (viewing zones and DNS only)
+| Resource | Permission | Access |
+|----------|------------|--------|
+| Zone | Zone | Read |
+| Zone | DNS | Read |
+
+#### DNS Management Only
+| Resource | Permission | Access |
+|----------|------------|--------|
+| Zone | Zone | Read |
+| Zone | DNS | Edit |
+
+#### Full Management (all MCP server features)
+| Resource | Permission | Access |
+|----------|------------|--------|
+| Zone | Zone | Read |
+| Zone | DNS | Edit |
+| Zone | Page Rules | Edit |
+| Zone | Transform Rules | Edit |
+| Zone | Cache Purge | Purge |
+
 ### Security Best Practices
 
 - **Principle of least privilege**: Only grant permissions you actually need
-- **Use specific zones**: Don't grant access to all zones unless necessary
-- **Set expiration**: Consider setting a TTL for tokens used in development
+- **Use specific zones**: Select specific domains instead of "All zones" when possible
+- **Set expiration**: Use TTL for tokens in development environments
+- **IP filtering**: Click "Use my IP" if you have a static IP address
 - **Rotate regularly**: Create new tokens periodically and revoke old ones
 - **Never commit tokens**: Don't put tokens in code or config files in git
 
