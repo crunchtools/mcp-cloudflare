@@ -84,38 +84,43 @@ podman run -e CLOUDFLARE_API_TOKEN=your_token \
 
 ## Configuration
 
-### Create a Cloudflare API Token
+### Creating a Cloudflare API Token
 
-1. Go to [Cloudflare API Tokens](https://dash.cloudflare.com/profile/api-tokens)
-2. Click "Create Token"
-3. Choose permissions based on your needs:
+1. **Navigate to API Tokens**
+   - Go to https://dash.cloudflare.com/profile/api-tokens
+   - Click "Create Token"
+   - Click "Get started" next to "Create Custom Token"
 
-**Read-Only (Safest)**
-```
-Zone:Read
-DNS:Read
-```
+2. **Configure Token Name**
+   - Enter: `mcp-cloudflare-crunchtools`
 
-**DNS Management**
-```
-Zone:Read
-DNS:Edit
-```
+3. **Configure Permissions**
 
-**Full Management**
-```
-Zone:Read
-DNS:Edit
-Transform Rules:Edit
-Page Rules:Edit
-Cache Purge:Edit
-```
+   The Permissions section has three dropdowns per row:
+   - **First dropdown**: Resource type (`Account` or `Zone`)
+   - **Second dropdown**: Specific permission category
+   - **Third dropdown**: Access level (`Read` or `Edit`)
 
-### Set Environment Variable
+   Click "+ Add more" to add each permission row. For full management, add:
 
-```bash
-export CLOUDFLARE_API_TOKEN="your_token_here"
-```
+   | Resource | Permission | Access |
+   |----------|------------|--------|
+   | Zone | Zone | Read |
+   | Zone | DNS | Edit |
+   | Zone | Page Rules | Edit |
+   | Zone | Transform Rules | Edit |
+   | Zone | Cache Purge | Purge |
+
+4. **Configure Zone Resources**
+   - First dropdown: Select "Include"
+   - Second dropdown: Select "All zones" or "Specific zone"
+
+5. **Configure Client IP Address Filtering (Optional)**
+   - Click "Use my IP" button to restrict token to your current IP
+
+6. **Create and Copy Token**
+   - Click "Continue to summary" → "Create Token"
+   - **IMPORTANT: Copy the token immediately** - it's only shown once!
 
 ### Add to Claude Code
 
@@ -132,6 +137,29 @@ claude mcp add mcp-cloudflare-crunchtools \
     --env CLOUDFLARE_API_TOKEN=your_token_here \
     -- podman run -i --rm -e CLOUDFLARE_API_TOKEN quay.io/crunchtools/mcp-cloudflare
 ```
+
+### Permission Sets by Use Case
+
+#### Read-Only (viewing only)
+| Resource | Permission | Access |
+|----------|------------|--------|
+| Zone | Zone | Read |
+| Zone | DNS | Read |
+
+#### DNS Management Only
+| Resource | Permission | Access |
+|----------|------------|--------|
+| Zone | Zone | Read |
+| Zone | DNS | Edit |
+
+#### Full Management (all features)
+| Resource | Permission | Access |
+|----------|------------|--------|
+| Zone | Zone | Read |
+| Zone | DNS | Edit |
+| Zone | Page Rules | Edit |
+| Zone | Transform Rules | Edit |
+| Zone | Cache Purge | Purge |
 
 ## Usage Examples
 
