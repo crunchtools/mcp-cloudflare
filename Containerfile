@@ -25,6 +25,9 @@ LABEL name="mcp-cloudflare-crunchtools" \
       io.k8s.display-name="MCP Cloudflare CrunchTools" \
       io.openshift.tags="mcp,cloudflare,dns"
 
+# Install uv
+RUN pip install --no-cache-dir uv
+
 # Set working directory
 WORKDIR /app
 
@@ -32,7 +35,7 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY src/ ./src/
 
-# Install dependencies using uv (pre-installed in hummingbird image)
+# Install dependencies using uv
 RUN uv pip install --system --no-cache .
 
 # Verify installation
