@@ -12,6 +12,16 @@ This MCP server is designed to be:
 - **Automatically updated** - GitHub Actions monitor for CVEs and update dependencies
 - **Containerized** - Available at `quay.io/crunchtools/mcp-cloudflare` built on [Hummingbird Python](https://quay.io/repository/hummingbird/python) base image
 
+## Naming Convention
+
+| Component | Name |
+|-----------|------|
+| GitHub repo | [crunchtools/mcp-cloudflare](https://github.com/crunchtools/mcp-cloudflare) |
+| Container | `quay.io/crunchtools/mcp-cloudflare` |
+| Python package (PyPI) | `mcp-cloudflare-crunchtools` |
+| CLI command | `mcp-cloudflare-crunchtools` |
+| Module import | `mcp_cloudflare_crunchtools` |
+
 ## Why Hummingbird?
 
 The container image is built on the [Hummingbird Python base image](https://quay.io/repository/hummingbird/python), which provides:
