@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: quay.io
-  IMAGE_NAME: crunchtools/mcp-cloudflare
+  IMAGE_NAME: crunchtools/mcp-cloudflare-crunchtools
 
 jobs:
   build-and-push:

@@ -10,7 +10,7 @@ This MCP server is designed to be:
 - **No third-party services** - Runs locally via stdio, your API token never leaves your machine
 - **Cross-platform** - Works on Linux, macOS, and Windows
 - **Automatically updated** - GitHub Actions monitor for CVEs and update dependencies
-- **Containerized** - Available at `quay.io/crunchtools/mcp-cloudflare` built on [Hummingbird Python](https://quay.io/repository/hummingbird/python) base image
+- **Containerized** - Available at `quay.io/crunchtools/mcp-cloudflare-crunchtools` built on [Hummingbird Python](https://quay.io/repository/hummingbird/python) base image
 
 ## Why Hummingbird?
 
@@ -69,7 +69,7 @@ pip install mcp-cloudflare-crunchtools
 
 ```bash
 podman run -e CLOUDFLARE_API_TOKEN=your_token \
-    quay.io/crunchtools/mcp-cloudflare
+    quay.io/crunchtools/mcp-cloudflare-crunchtools
 ```
 
 ## Configuration
@@ -120,7 +120,7 @@ Or for the container version:
 ```bash
 claude mcp add mcp-cloudflare-crunchtools \
     --env CLOUDFLARE_API_TOKEN=your_token_here \
-    -- podman run -i --rm -e CLOUDFLARE_API_TOKEN quay.io/crunchtools/mcp-cloudflare
+    -- podman run -i --rm -e CLOUDFLARE_API_TOKEN quay.io/crunchtools/mcp-cloudflare-crunchtools
 ```
 
 ## Usage Examples
