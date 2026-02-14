@@ -53,9 +53,9 @@ async def create_page_rule(
     Args:
         zone_id: Zone ID (32-character hex string)
         targets: URL pattern targets. Example:
-            [{"target": "url", "constraint": {"operator": "matches", "value": "*example.com/path/*"}}]
+            [{"target": "url", "constraint": {"operator": "matches", "value": "..."}}]
         actions: Actions to perform. Example:
-            [{"id": "forwarding_url", "value": {"url": "https://example.com/new-path", "status_code": 301}}]
+            [{"id": "forwarding_url", "value": {"url": "...", "status_code": 301}}]
         priority: Rule priority (1-1000, lower = higher priority)
         status: Rule status (active, disabled)
 

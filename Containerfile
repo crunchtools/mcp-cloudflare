@@ -1,5 +1,5 @@
 # MCP Cloudflare CrunchTools Container
-# Built on Red Hat Universal Base Image for enterprise security
+# Built on Hummingbird Python image (Red Hat UBI-based) for enterprise security
 #
 # Build:
 #   podman build -t quay.io/crunchtools/mcp-cloudflare .
@@ -12,8 +12,8 @@
 #     --env CLOUDFLARE_API_TOKEN=your_token \
 #     -- podman run -i --rm -e CLOUDFLARE_API_TOKEN quay.io/crunchtools/mcp-cloudflare
 
-# Use Red Hat Universal Base Image with Python 3.12
-FROM registry.access.redhat.com/ubi9/python-312:latest
+# Use Hummingbird Python image (Red Hat UBI-based with Python pre-installed)
+FROM quay.io/hummingbird/python:latest
 
 # Labels for container metadata
 LABEL name="mcp-cloudflare-crunchtools" \
@@ -25,23 +25,14 @@ LABEL name="mcp-cloudflare-crunchtools" \
       io.k8s.display-name="MCP Cloudflare CrunchTools" \
       io.openshift.tags="mcp,cloudflare,dns"
 
-# Switch to root to install system packages if needed
-USER 0
-
-# Install uv for faster dependency management
-RUN pip install --no-cache-dir uv
-
-# Switch back to default user (1001)
-USER 1001
-
 # Set working directory
-WORKDIR /opt/app-root/src
+WORKDIR /app
 
 # Copy project files
-COPY --chown=1001:0 pyproject.toml README.md ./
-COPY --chown=1001:0 src/ ./src/
+COPY pyproject.toml README.md ./
+COPY src/ ./src/
 
-# Install dependencies using uv
+# Install dependencies using uv (pre-installed in hummingbird image)
 RUN uv pip install --system --no-cache .
 
 # Verify installation

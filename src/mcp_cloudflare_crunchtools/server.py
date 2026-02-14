@@ -9,29 +9,29 @@ from typing import Any
 from fastmcp import FastMCP
 
 from .tools import (
-    # Cache
-    purge_cache,
     # DNS
     create_dns_record,
-    delete_dns_record,
-    get_dns_record,
-    list_dns_records,
-    update_dns_record,
     # Page Rules
     create_page_rule,
+    delete_dns_record,
     delete_page_rule,
+    get_dns_record,
+    # Zones
+    get_zone,
+    list_dns_records,
     list_page_rules,
-    update_page_rule,
     # Transform Rules
     list_request_header_rules,
     list_response_header_rules,
     list_url_rewrite_rules,
+    list_zones,
+    # Cache
+    purge_cache,
     set_request_header_rules,
     set_response_header_rules,
     set_url_rewrite_rules,
-    # Zones
-    get_zone,
-    list_zones,
+    update_dns_record,
+    update_page_rule,
 )
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 mcp = FastMCP(
     name="mcp-cloudflare-crunchtools",
     version="0.1.0",
-    description="Secure MCP server for Cloudflare DNS, Transform Rules, Page Rules, and Cache",
+    instructions="Secure MCP server for Cloudflare DNS, Transform Rules, Page Rules, and Cache",
 )
 
 
@@ -257,7 +257,7 @@ async def set_request_header_rules_tool(
     - expression: Filter expression (e.g., "true" for all requests)
     - description: Human-readable description
     - action: "rewrite"
-    - action_parameters: {"headers": {"Header-Name": {"operation": "set|add|remove", "value": "..."}}}
+    - action_parameters: {"headers": {"Header-Name": {...}}}
 
     Args:
         zone_id: Zone ID (32-character hex string)
@@ -293,7 +293,7 @@ async def set_response_header_rules_tool(
     - expression: Filter expression (e.g., "true" for all responses)
     - description: Human-readable description
     - action: "rewrite"
-    - action_parameters: {"headers": {"Header-Name": {"operation": "set|add|remove", "value": "..."}}}
+    - action_parameters: {"headers": {"Header-Name": {...}}}
 
     Args:
         zone_id: Zone ID (32-character hex string)
@@ -375,8 +375,8 @@ async def create_page_rule_tool(
 
     Args:
         zone_id: Zone ID (32-character hex string)
-        targets: URL patterns, e.g., [{"target": "url", "constraint": {"operator": "matches", "value": "*example.com/*"}}]
-        actions: Actions, e.g., [{"id": "forwarding_url", "value": {"url": "https://...", "status_code": 301}}]
+        targets: URL pattern targets
+        actions: Page rule actions
         priority: Rule priority 1-1000 (default: 1)
         status: active or disabled (default: active)
 

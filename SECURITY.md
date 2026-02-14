@@ -70,7 +70,7 @@ This document describes the security architecture of mcp-cloudflare-crunchtools.
 │ - Automated CVE scanning via GitHub Actions                 │
 │ - Dependabot alerts enabled                                 │
 │ - Weekly dependency audits                                  │
-│ - Container built on Red Hat UBI for enterprise security    │
+│ - Container built on Hummingbird (UBI) for minimal CVEs     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -171,12 +171,29 @@ This project uses GitHub Actions to automatically scan for and address CVEs in d
 
 ### 4.2 Container Security
 
-The container image is built on **Red Hat Universal Base Image (UBI)**:
+The container image is built on **[Hummingbird Python](https://quay.io/repository/hummingbird/python)**, a minimal Python base image built on Red Hat UBI:
 
-- Enterprise-grade security and compliance
-- Regular security updates from Red Hat
-- Minimal attack surface
-- FIPS-compliant cryptography available
+**Why Hummingbird?**
+
+| Advantage | Description |
+|-----------|-------------|
+| **Minimal CVE Count** | Built with only essential packages, dramatically reducing attack surface compared to general-purpose Python images |
+| **Red Hat UBI Foundation** | Enterprise-grade security, compliance (FedRAMP, HIPAA, PCI-DSS), and commercial support available |
+| **Rapid Security Updates** | Security patches applied promptly with automated rebuilds |
+| **Python Optimized** | Pre-configured with uv package manager for fast, reproducible builds |
+| **Non-Root Default** | Runs as non-root user by default for defense in depth |
+| **Production Ready** | Proper signal handling, minimal footprint, suitable for production workloads |
+
+**CVE Comparison** (typical counts):
+
+| Base Image | Typical CVE Count |
+|------------|-------------------|
+| python:3.12 (Debian) | 100-200+ |
+| python:3.12-slim | 50-100 |
+| python:3.12-alpine | 10-30 |
+| Hummingbird Python | <10 |
+
+The minimal package set in Hummingbird images means fewer dependencies to track, patch, and audit
 
 ### 4.3 Events Logged
 

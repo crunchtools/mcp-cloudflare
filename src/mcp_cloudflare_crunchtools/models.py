@@ -5,7 +5,7 @@ and ensure data integrity before making API calls.
 """
 
 import re
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -201,7 +201,7 @@ class PageRuleAction(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     id: str = Field(..., min_length=1, max_length=100, description="Action ID")
-    value: str | int | bool | dict | None = Field(
+    value: str | int | bool | dict[str, Any] | None = Field(
         default=None, description="Action value"
     )
 
@@ -211,7 +211,7 @@ class PageRuleInput(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    targets: list[dict] = Field(
+    targets: list[dict[str, Any]] = Field(
         ..., min_length=1, max_length=10, description="URL pattern targets"
     )
     actions: list[PageRuleAction] = Field(

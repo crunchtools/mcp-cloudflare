@@ -28,7 +28,8 @@ async def _get_ruleset(zone_id: str, phase: str) -> dict[str, Any]:
             # Get full ruleset with rules
             ruleset_id = ruleset["id"]
             ruleset_response = await client.get(f"/zones/{zone_id}/rulesets/{ruleset_id}")
-            return ruleset_response.get("result", {})
+            result: dict[str, Any] = ruleset_response.get("result", {})
+            return result
 
     # No ruleset found for this phase
     return {}
@@ -52,7 +53,7 @@ async def _update_ruleset(
             existing_ruleset_id = ruleset["id"]
             break
 
-    body = {
+    body: dict[str, Any] = {
         "rules": rules,
     }
 
@@ -72,7 +73,8 @@ async def _update_ruleset(
             json_data=body,
         )
 
-    return response.get("result", {})
+    result: dict[str, Any] = response.get("result", {})
+    return result
 
 
 # Request Header Rules
