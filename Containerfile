@@ -2,15 +2,15 @@
 # Built on Hummingbird Python image (Red Hat UBI-based) for enterprise security
 #
 # Build:
-#   podman build -t quay.io/crunchtools/mcp-cloudflare-crunchtools .
+#   podman build -t quay.io/crunchtools/mcp-cloudflare .
 #
 # Run:
-#   podman run -e CLOUDFLARE_API_TOKEN=your_token quay.io/crunchtools/mcp-cloudflare-crunchtools
+#   podman run -e CLOUDFLARE_API_TOKEN=your_token quay.io/crunchtools/mcp-cloudflare
 #
 # With Claude Code:
 #   claude mcp add mcp-cloudflare \
 #     --env CLOUDFLARE_API_TOKEN=your_token \
-#     -- podman run -i --rm -e CLOUDFLARE_API_TOKEN quay.io/crunchtools/mcp-cloudflare-crunchtools
+#     -- podman run -i --rm -e CLOUDFLARE_API_TOKEN quay.io/crunchtools/mcp-cloudflare
 
 # Use Hummingbird Python image (Red Hat UBI-based with Python pre-installed)
 FROM quay.io/hummingbird/python:latest
