@@ -25,9 +25,6 @@ LABEL name="mcp-cloudflare-crunchtools" \
       io.k8s.display-name="MCP Cloudflare CrunchTools" \
       io.openshift.tags="mcp,cloudflare,dns"
 
-# Install uv
-RUN pip install --no-cache-dir uv
-
 # Set working directory
 WORKDIR /app
 
@@ -35,8 +32,8 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY src/ ./src/
 
-# Install dependencies using uv
-RUN uv pip install --system --no-cache .
+# Install the package and dependencies
+RUN pip install --no-cache-dir .
 
 # Verify installation
 RUN python -c "from mcp_cloudflare_crunchtools import main; print('Installation verified')"
