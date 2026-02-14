@@ -29,26 +29,84 @@ claude mcp add mcp-cloudflare-crunchtools \
     -- uv run mcp-cloudflare-crunchtools
 ```
 
-## Getting a Cloudflare API Token
+## Creating a Cloudflare API Token
 
-1. Go to https://dash.cloudflare.com/profile/api-tokens
-2. Click "Create Token"
-3. Choose permissions based on your needs:
+### Step-by-Step Instructions
 
-**Read-Only (Safest)**
-- Zone:Read
-- DNS:Read
+1. **Log in to Cloudflare Dashboard**
+   - Go to https://dash.cloudflare.com
+   - Sign in with your Cloudflare account
 
-**DNS Management**
-- Zone:Read
-- DNS:Edit
+2. **Navigate to API Tokens**
+   - Click your profile icon (top right)
+   - Select "My Profile"
+   - Click "API Tokens" in the left sidebar
+   - Or go directly to: https://dash.cloudflare.com/profile/api-tokens
 
-**Full Management**
-- Zone:Read
-- DNS:Edit
-- Transform Rules:Edit
-- Page Rules:Edit
-- Cache Purge:Edit
+3. **Create a Custom Token**
+   - Click "Create Token"
+   - Click "Get started" next to "Create Custom Token"
+
+4. **Configure Token Name**
+   - Enter a descriptive name like "MCP Cloudflare CrunchTools"
+
+5. **Set Permissions** (based on your needs)
+
+   Choose ONE of these permission sets:
+
+   #### Read-Only (Safest - for viewing only)
+   | Permission | Access |
+   |------------|--------|
+   | Zone | Zone | Read |
+   | Zone | DNS | Read |
+
+   #### DNS Management (for managing DNS records)
+   | Permission | Access |
+   |------------|--------|
+   | Zone | Zone | Read |
+   | Zone | DNS | Edit |
+
+   #### Full Management (all features)
+   | Permission | Access |
+   |------------|--------|
+   | Zone | Zone | Read |
+   | Zone | DNS | Edit |
+   | Zone | Page Rules | Edit |
+   | Zone | Transform Rules | Edit |
+   | Zone | Cache Purge | Purge |
+
+6. **Set Zone Resources**
+   - "Include" → "Specific zone" → Select your domain(s)
+   - Or "Include" → "All zones" (if managing multiple domains)
+
+7. **Set IP Filtering (Optional but Recommended)**
+   - Add your IP address for additional security
+   - Or leave blank to allow from any IP
+
+8. **Set TTL (Optional)**
+   - Set an expiration date if desired
+   - Or leave blank for no expiration
+
+9. **Create and Copy Token**
+   - Click "Continue to summary"
+   - Review permissions
+   - Click "Create Token"
+   - **IMPORTANT: Copy the token immediately** - it won't be shown again
+
+10. **Use the Token**
+    ```bash
+    claude mcp add mcp-cloudflare-crunchtools \
+        --env CLOUDFLARE_API_TOKEN=your_copied_token \
+        -- uvx mcp-cloudflare-crunchtools
+    ```
+
+### Security Best Practices
+
+- **Principle of least privilege**: Only grant permissions you actually need
+- **Use specific zones**: Don't grant access to all zones unless necessary
+- **Set expiration**: Consider setting a TTL for tokens used in development
+- **Rotate regularly**: Create new tokens periodically and revoke old ones
+- **Never commit tokens**: Don't put tokens in code or config files in git
 
 ## Available Tools
 
