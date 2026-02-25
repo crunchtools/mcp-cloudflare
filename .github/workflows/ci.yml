@@ -45,9 +45,9 @@ jobs:
 
       - name: Build container image
         run: |
-          podman build -t mcp-cloudflare:test .
+          docker build -f Containerfile -t mcp-cloudflare:test .
 
       - name: Verify container
         run: |
           # Just verify it starts (will fail due to no token, but should start)
-          timeout 5 podman run --rm mcp-cloudflare:test || true
+          timeout 5 docker run --rm mcp-cloudflare:test || true
