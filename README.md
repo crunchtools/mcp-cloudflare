@@ -24,15 +24,14 @@ This MCP server is designed to be:
 
 ## Why Hummingbird?
 
-The container image is built on the [Hummingbird Python base image](https://quay.io/repository/hummingbird/python), which provides:
+The container image is built on the [Hummingbird Python base image](https://quay.io/repository/hummingbird/python) from [Project Hummingbird](https://github.com/hummingbird-project), which provides:
 
 - **Minimal CVE exposure** - Hummingbird images are built with a minimal package set, dramatically reducing the attack surface compared to general-purpose images
-- **Red Hat UBI foundation** - Built on Red Hat Universal Base Image, providing enterprise-grade security, compliance, and support
 - **Regular updates** - Security patches are applied promptly, keeping CVE counts low
 - **Optimized for Python** - Pre-configured Python environment with uv package manager for fast, reproducible builds
 - **Production-ready** - Designed for production workloads with proper signal handling and non-root user defaults
 
-This combination means your MCP server runs in a hardened environment with fewer vulnerabilities than typical Python container images
+This means your MCP server runs in a hardened environment with fewer vulnerabilities than typical Python container images
 
 ## Features
 
@@ -255,7 +254,7 @@ podman build -t mcp-cloudflare .
 
 ## License
 
-Apache-2.0
+AGPL-3.0-or-later
 
 ## Contributing
 
