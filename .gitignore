@@ -88,3 +88,6 @@ uv.lock
 # OS files
 .DS_Store
 Thumbs.db
+
+# MCP Registry auth tokens
+.mcpregistry_*
