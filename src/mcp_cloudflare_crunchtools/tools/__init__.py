@@ -3,6 +3,12 @@
 This package contains all the MCP tool implementations for Cloudflare operations.
 """
 
+from .analytics import (
+    get_security_events,
+    get_top_pages,
+    get_traffic_by_country,
+    get_zone_analytics,
+)
 from .cache import purge_cache
 from .dns import (
     create_dns_record,
@@ -24,6 +30,12 @@ from .transform import (
     set_request_header_rules,
     set_response_header_rules,
     set_url_rewrite_rules,
+)
+from .waf import (
+    create_waf_rule,
+    delete_waf_rule,
+    list_waf_rules,
+    update_waf_rule,
 )
 from .zones import get_zone, list_zones
 
@@ -51,4 +63,14 @@ __all__ = [
     "delete_page_rule",
     # Cache
     "purge_cache",
+    # Analytics
+    "get_zone_analytics",
+    "get_top_pages",
+    "get_traffic_by_country",
+    "get_security_events",
+    # WAF
+    "list_waf_rules",
+    "create_waf_rule",
+    "update_waf_rule",
+    "delete_waf_rule",
 ]

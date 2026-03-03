@@ -23,15 +23,22 @@ class TestToolRegistration:
         from mcp_cloudflare_crunchtools.tools import (
             create_dns_record,
             create_page_rule,
+            create_waf_rule,
             delete_dns_record,
             delete_page_rule,
+            delete_waf_rule,
             get_dns_record,
+            get_security_events,
+            get_top_pages,
+            get_traffic_by_country,
             get_zone,
+            get_zone_analytics,
             list_dns_records,
             list_page_rules,
             list_request_header_rules,
             list_response_header_rules,
             list_url_rewrite_rules,
+            list_waf_rules,
             list_zones,
             purge_cache,
             set_request_header_rules,
@@ -39,6 +46,7 @@ class TestToolRegistration:
             set_url_rewrite_rules,
             update_dns_record,
             update_page_rule,
+            update_waf_rule,
         )
 
         # Verify all functions are callable
@@ -60,6 +68,14 @@ class TestToolRegistration:
         assert callable(update_page_rule)
         assert callable(delete_page_rule)
         assert callable(purge_cache)
+        assert callable(get_zone_analytics)
+        assert callable(get_top_pages)
+        assert callable(get_traffic_by_country)
+        assert callable(get_security_events)
+        assert callable(list_waf_rules)
+        assert callable(create_waf_rule)
+        assert callable(update_waf_rule)
+        assert callable(delete_waf_rule)
 
 
 class TestErrorSafety:

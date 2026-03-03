@@ -189,6 +189,36 @@ class CloudflareClient:
         """Make a DELETE request."""
         return await self._request("DELETE", path)
 
+    async def graphql(
+        self,
+        query: str,
+        variables: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Make a GraphQL query to the Cloudflare Analytics API.
+
+        Args:
+            query: GraphQL query string
+            variables: Query variables
+
+        Returns:
+            The 'data' portion of the GraphQL response
+
+        Raises:
+            CloudflareApiError: On GraphQL errors (which may arrive with HTTP 200)
+        """
+        payload: dict[str, Any] = {"query": query}
+        if variables:
+            payload["variables"] = variables
+
+        response = await self.post("/graphql", json_data=payload)
+
+        # GraphQL errors come back inside the response body, not as HTTP errors
+        if response.get("errors"):
+            messages = [e.get("message", "Unknown error") for e in response["errors"]]
+            raise CloudflareApiError(0, "; ".join(messages))
+
+        return response.get("data", {})
+
 
 # Global client instance
 _client: CloudflareClient | None = None

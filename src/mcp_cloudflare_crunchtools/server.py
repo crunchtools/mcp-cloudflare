@@ -9,29 +9,32 @@ from typing import Any
 from fastmcp import FastMCP
 
 from .tools import (
-    # DNS
     create_dns_record,
-    # Page Rules
     create_page_rule,
+    create_waf_rule,
     delete_dns_record,
     delete_page_rule,
+    delete_waf_rule,
     get_dns_record,
-    # Zones
+    get_security_events,
+    get_top_pages,
+    get_traffic_by_country,
     get_zone,
+    get_zone_analytics,
     list_dns_records,
     list_page_rules,
-    # Transform Rules
     list_request_header_rules,
     list_response_header_rules,
     list_url_rewrite_rules,
+    list_waf_rules,
     list_zones,
-    # Cache
     purge_cache,
     set_request_header_rules,
     set_response_header_rules,
     set_url_rewrite_rules,
     update_dns_record,
     update_page_rule,
+    update_waf_rule,
 )
 
 logger = logging.getLogger(__name__)
@@ -39,8 +42,11 @@ logger = logging.getLogger(__name__)
 # Create the FastMCP server
 mcp = FastMCP(
     name="mcp-cloudflare-crunchtools",
-    version="0.1.1",
-    instructions="Secure MCP server for Cloudflare DNS, Transform Rules, Page Rules, and Cache",
+    version="0.5.0",
+    instructions=(
+        "Secure MCP server for Cloudflare DNS, Transform Rules,"
+        " Page Rules, Cache, Analytics, and WAF"
+    ),
 )
 
 
@@ -473,3 +479,261 @@ async def purge_cache_tool(
         hosts=hosts,
         prefixes=prefixes,
     )
+
+
+# Register Analytics tools
+
+
+async def _resolve_zone_id(
+    zone_id: str | None, zone_name: str | None
+) -> str | None:
+    """Resolve zone_name to zone_id if needed."""
+    if zone_name and not zone_id:
+        from .tools.zones import list_zones
+
+        result = await list_zones(name=zone_name)
+        zones = result.get("zones", [])
+        if not zones:
+            return None
+        zone_id = zones[0]["id"]
+    return zone_id
+
+
+@mcp.tool()
+async def get_zone_analytics_tool(
+    zone_id: str | None = None,
+    zone_name: str | None = None,
+    since: str | None = None,
+    until: str | None = None,
+) -> dict[str, Any]:
+    """Get zone traffic analytics summary.
+
+    Returns total requests, unique visitors, bandwidth, cache ratio,
+    and status code breakdown for the given date range.
+
+    Provide either zone_id or zone_name, not both.
+
+    Args:
+        zone_id: Zone ID (32-character hex string)
+        zone_name: Zone name (domain like example.com)
+        since: Start date ISO format (default: 30 days ago)
+        until: End date ISO format (default: today)
+
+    Returns:
+        Analytics summary with requests, bandwidth, visitors, and status codes
+    """
+    zone_id = await _resolve_zone_id(zone_id, zone_name)
+    if not zone_id:
+        return {"error": "Either zone_id or zone_name must be provided, or zone not found"}
+    return await get_zone_analytics(zone_id=zone_id, since=since, until=until)
+
+
+@mcp.tool()
+async def get_top_pages_tool(
+    zone_id: str | None = None,
+    zone_name: str | None = None,
+    since: str | None = None,
+    until: str | None = None,
+    limit: int = 15,
+) -> dict[str, Any]:
+    """Get top pages by request count.
+
+    Provide either zone_id or zone_name, not both.
+
+    Args:
+        zone_id: Zone ID (32-character hex string)
+        zone_name: Zone name (domain like example.com)
+        since: Start date ISO format (default: 30 days ago)
+        until: End date ISO format (default: today)
+        limit: Number of results (default: 15)
+
+    Returns:
+        Top pages with request counts and bandwidth
+    """
+    zone_id = await _resolve_zone_id(zone_id, zone_name)
+    if not zone_id:
+        return {"error": "Either zone_id or zone_name must be provided, or zone not found"}
+    return await get_top_pages(zone_id=zone_id, since=since, until=until, limit=limit)
+
+
+@mcp.tool()
+async def get_traffic_by_country_tool(
+    zone_id: str | None = None,
+    zone_name: str | None = None,
+    since: str | None = None,
+    until: str | None = None,
+    limit: int = 20,
+) -> dict[str, Any]:
+    """Get traffic breakdown by country.
+
+    Provide either zone_id or zone_name, not both.
+
+    Args:
+        zone_id: Zone ID (32-character hex string)
+        zone_name: Zone name (domain like example.com)
+        since: Start date ISO format (default: 30 days ago)
+        until: End date ISO format (default: today)
+        limit: Number of countries (default: 20)
+
+    Returns:
+        Country breakdown with request counts and bandwidth
+    """
+    zone_id = await _resolve_zone_id(zone_id, zone_name)
+    if not zone_id:
+        return {"error": "Either zone_id or zone_name must be provided, or zone not found"}
+    return await get_traffic_by_country(zone_id=zone_id, since=since, until=until, limit=limit)
+
+
+@mcp.tool()
+async def get_security_events_tool(
+    zone_id: str | None = None,
+    zone_name: str | None = None,
+    since: str | None = None,
+    until: str | None = None,
+    limit: int = 20,
+) -> dict[str, Any]:
+    """Get security/firewall events grouped by action and source.
+
+    Provide either zone_id or zone_name, not both.
+
+    Args:
+        zone_id: Zone ID (32-character hex string)
+        zone_name: Zone name (domain like example.com)
+        since: Start date ISO format (default: 30 days ago)
+        until: End date ISO format (default: today)
+        limit: Number of results (default: 20)
+
+    Returns:
+        Security events with action, country, source, and count
+    """
+    zone_id = await _resolve_zone_id(zone_id, zone_name)
+    if not zone_id:
+        return {"error": "Either zone_id or zone_name must be provided, or zone not found"}
+    return await get_security_events(zone_id=zone_id, since=since, until=until, limit=limit)
+
+
+# Register WAF tools
+
+
+@mcp.tool()
+async def list_waf_rules_tool(
+    zone_id: str | None = None,
+    zone_name: str | None = None,
+) -> dict[str, Any]:
+    """List all WAF custom rules for a zone.
+
+    Provide either zone_id or zone_name, not both.
+
+    Args:
+        zone_id: Zone ID (32-character hex string)
+        zone_name: Zone name (domain like example.com)
+
+    Returns:
+        List of WAF rules with their expressions, actions, and status
+    """
+    zone_id = await _resolve_zone_id(zone_id, zone_name)
+    if not zone_id:
+        return {"error": "Either zone_id or zone_name must be provided, or zone not found"}
+    return await list_waf_rules(zone_id=zone_id)
+
+
+@mcp.tool()
+async def create_waf_rule_tool(
+    zone_id: str | None = None,
+    zone_name: str | None = None,
+    expression: str = "",
+    action: str = "managed_challenge",
+    description: str = "",
+    enabled: bool = True,
+) -> dict[str, Any]:
+    """Create a new WAF custom rule.
+
+    Free plans support up to 5 custom rules.
+    Provide either zone_id or zone_name, not both.
+
+    Args:
+        zone_id: Zone ID (32-character hex string)
+        zone_name: Zone name (domain like example.com)
+        expression: Cloudflare filter expression
+            (e.g., '(http.request.uri.path contains "xmlrpc.php")')
+        action: Action to take (managed_challenge, block, js_challenge,
+            challenge, skip, log)
+        description: Human-readable description of the rule
+        enabled: Whether the rule is enabled (default: true)
+
+    Returns:
+        Created rule details
+    """
+    zone_id = await _resolve_zone_id(zone_id, zone_name)
+    if not zone_id:
+        return {"error": "Either zone_id or zone_name must be provided, or zone not found"}
+    return await create_waf_rule(
+        zone_id=zone_id,
+        expression=expression,
+        action=action,
+        description=description,
+        enabled=enabled,
+    )
+
+
+@mcp.tool()
+async def update_waf_rule_tool(
+    rule_id: str,
+    zone_id: str | None = None,
+    zone_name: str | None = None,
+    expression: str | None = None,
+    action: str | None = None,
+    description: str | None = None,
+    enabled: bool | None = None,
+) -> dict[str, Any]:
+    """Update an existing WAF custom rule.
+
+    Provide either zone_id or zone_name, not both.
+
+    Args:
+        rule_id: Rule ID (32-character hex string)
+        zone_id: Zone ID (32-character hex string)
+        zone_name: Zone name (domain like example.com)
+        expression: New filter expression (optional)
+        action: New action (optional)
+        description: New description (optional)
+        enabled: Enable or disable the rule (optional)
+
+    Returns:
+        Updated rule details
+    """
+    zone_id = await _resolve_zone_id(zone_id, zone_name)
+    if not zone_id:
+        return {"error": "Either zone_id or zone_name must be provided, or zone not found"}
+    return await update_waf_rule(
+        zone_id=zone_id,
+        rule_id=rule_id,
+        expression=expression,
+        action=action,
+        description=description,
+        enabled=enabled,
+    )
+
+
+@mcp.tool()
+async def delete_waf_rule_tool(
+    rule_id: str,
+    zone_id: str | None = None,
+    zone_name: str | None = None,
+) -> dict[str, Any]:
+    """Delete a WAF custom rule.
+
+    Provide either zone_id or zone_name, not both.
+
+    Args:
+        rule_id: Rule ID (32-character hex string)
+        zone_id: Zone ID (32-character hex string)
+        zone_name: Zone name (domain like example.com)
+
+    Returns:
+        Deletion confirmation
+    """
+    zone_id = await _resolve_zone_id(zone_id, zone_name)
+    if not zone_id:
+        return {"error": "Either zone_id or zone_name must be provided, or zone not found"}
+    return await delete_waf_rule(zone_id=zone_id, rule_id=rule_id)
