@@ -3,6 +3,8 @@
 > **Version:** 1.0.0
 > **Ratified:** 2026-03-03
 > **Status:** Active
+> **Inherits:** [crunchtools/constitution](https://github.com/crunchtools/constitution) v1.0.0
+> **Profile:** MCP Server
 
 This constitution establishes the core principles, constraints, and workflows that govern all development on mcp-cloudflare-crunchtools.
 
@@ -53,17 +55,45 @@ Never put business logic in `server.py`. Never put MCP registration in `tools/*.
 
 The server connects to a single Cloudflare account configured via CLOUDFLARE_API_TOKEN. The API base URL is hardcoded and immutable.
 
-### 4. Semantic Versioning
+### 4. Three Distribution Channels
 
-Follow [Semantic Versioning 2.0.0](https://semver.org/) strictly. Version bump happens at release time, not per-commit.
+Every release MUST be available through all three channels simultaneously:
 
-### 5. AI Code Quality
+| Channel | Command | Use Case |
+|---------|---------|----------|
+| uvx | `uvx mcp-cloudflare-crunchtools` | Zero-install, Claude Code |
+| pip | `pip install mcp-cloudflare-crunchtools` | Virtual environments |
+| Container | `podman run quay.io/crunchtools/mcp-cloudflare` | Isolated, systemd |
+
+### 5. Semantic Versioning
+
+Follow [Semantic Versioning 2.0.0](https://semver.org/) strictly. MAJOR/MINOR/PATCH. Version bump happens at release time, not per-commit.
+
+### 6. AI Code Quality
 
 All code MUST pass Gourmand checks before merge. Zero violations required.
 
 ---
 
-## II. Testing Standards
+## II. Technology Stack
+
+| Layer | Technology | Version |
+|-------|------------|---------|
+| Language | Python | 3.10+ |
+| MCP Framework | FastMCP | Latest |
+| HTTP Client | httpx | Latest |
+| Validation | Pydantic | v2 |
+| Container Base | Hummingbird | Latest |
+| Package Manager | uv | Latest |
+| Build System | hatchling | Latest |
+| Linter | ruff | Latest |
+| Type Checker | mypy (strict) | Latest |
+| Tests | pytest + pytest-asyncio | Latest |
+| Slop Detector | gourmand | Latest |
+
+---
+
+## III. Testing Standards
 
 ### Mocked API Tests (MANDATORY)
 
@@ -75,7 +105,31 @@ Every tool MUST have a corresponding mocked test. Tests use `httpx.AsyncClient` 
 
 ---
 
-## III. Code Quality Gates
+## IV. Gourmand (AI Slop Detection)
+
+All code MUST pass `gourmand --full .` with **zero violations** before merge. Gourmand is a CI gate in GitHub Actions.
+
+### Configuration
+
+- `gourmand.toml` — Check settings, excluded paths
+- `gourmand-exceptions.toml` — Documented exceptions with justifications
+- `.gourmand-cache/` — Must be in `.gitignore`
+
+### Exception Policy
+
+Exceptions MUST have documented justifications in `gourmand-exceptions.toml`. Acceptable reasons:
+- Standard API patterns (HTTP status codes, pagination params)
+- Test-specific patterns (intentional invalid input)
+- Framework requirements (CLAUDE.md for Claude Code)
+
+Unacceptable reasons:
+- "The code is special"
+- "The threshold is too strict"
+- Rewording to avoid detection
+
+---
+
+## V. Code Quality Gates
 
 1. **Lint** — `uv run ruff check src tests`
 2. **Type Check** — `uv run mypy src`
@@ -85,19 +139,51 @@ Every tool MUST have a corresponding mocked test. Tests use `httpx.AsyncClient` 
 
 ---
 
-## IV. Naming Conventions
+## VI. Naming Conventions
 
 | Context | Name |
 |---------|------|
 | GitHub repo | `crunchtools/mcp-cloudflare` |
 | PyPI package | `mcp-cloudflare-crunchtools` |
+| CLI command | `mcp-cloudflare-crunchtools` |
 | Python module | `mcp_cloudflare_crunchtools` |
 | Container image | `quay.io/crunchtools/mcp-cloudflare` |
+| systemd service | `mcp-cloudflare.service` |
+| HTTP port | 8004 |
 | License | AGPL-3.0-or-later |
 
 ---
 
-## V. Governance
+## VII. Development Workflow
+
+### Adding a New Tool
+
+1. Add the async function to the appropriate `tools/*.py` file
+2. Export it from `tools/__init__.py`
+3. Import it in `server.py` and register with `@mcp.tool()`
+4. Add a mocked test in `tests/test_tools.py`
+5. Update the tool count in `test_tool_count`
+6. Run all five quality gates
+7. Update CLAUDE.md tool listing
+
+### Adding a New Tool Group
+
+1. Create `tools/new_group.py` with async functions
+2. Add imports and `__all__` entries in `tools/__init__.py`
+3. Add `@mcp.tool()` wrappers in `server.py`
+4. Add a `TestNewGroupTools` class in `tests/test_tools.py`
+5. Run all five quality gates
+
+---
+
+## VIII. Governance
+
+### Amendment Process
+
+1. Create a PR with proposed changes to this constitution
+2. Document rationale in PR description
+3. Require maintainer approval
+4. Update version number upon merge
 
 ### Ratification History
 
