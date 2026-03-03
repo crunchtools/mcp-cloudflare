@@ -23,7 +23,10 @@ LABEL name="mcp-cloudflare-crunchtools" \
       maintainer="crunchtools.com" \
       url="https://github.com/crunchtools/mcp-cloudflare" \
       io.k8s.display-name="MCP Cloudflare CrunchTools" \
-      io.openshift.tags="mcp,cloudflare,dns"
+      io.openshift.tags="mcp,cloudflare,dns" \
+      org.opencontainers.image.source="https://github.com/crunchtools/mcp-cloudflare" \
+      org.opencontainers.image.description="Secure MCP server for Cloudflare DNS, Transform Rules, and Page Rules" \
+      org.opencontainers.image.licenses="AGPL-3.0-or-later"
 
 # Set working directory
 WORKDIR /app
