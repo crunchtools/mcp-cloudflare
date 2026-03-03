@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Cloudflare API Documentation
+    url: https://developers.cloudflare.com/api/
+    about: Check the Cloudflare API for endpoint behavior questions

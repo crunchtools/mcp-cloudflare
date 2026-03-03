@@ -91,3 +91,6 @@ Thumbs.db
 
 # MCP Registry auth tokens
 .mcpregistry_*
+
+# gourmand
+.gourmand-cache/

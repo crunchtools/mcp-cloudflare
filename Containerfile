@@ -17,7 +17,7 @@ FROM quay.io/hummingbird/python:latest
 
 # Labels for container metadata
 LABEL name="mcp-cloudflare-crunchtools" \
-      version="0.1.0" \
+      version="0.5.0" \
       summary="Secure MCP server for Cloudflare DNS, Transform Rules, and Page Rules" \
       description="A security-focused MCP server for Cloudflare built on Red Hat UBI" \
       maintainer="crunchtools.com" \
