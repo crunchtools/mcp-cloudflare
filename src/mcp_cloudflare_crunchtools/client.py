@@ -217,7 +217,8 @@ class CloudflareClient:
             messages = [e.get("message", "Unknown error") for e in response["errors"]]
             raise CloudflareApiError(0, "; ".join(messages))
 
-        return response.get("data", {})
+        result: dict[str, Any] = response.get("data", {})
+        return result
 
 
 # Global client instance

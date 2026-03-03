@@ -35,7 +35,8 @@ async def _get_waf_ruleset(
     )
     for ruleset in response.get("result", []):
         if ruleset.get("phase") == WAF_PHASE and ruleset.get("kind") == "zone":
-            return ruleset
+            result: dict[str, Any] = ruleset
+            return result
     return None
 
 
