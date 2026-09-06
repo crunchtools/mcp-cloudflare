@@ -2,9 +2,14 @@
 
 This module defines exception classes that are safe to expose to MCP clients.
 Internal errors should be caught and converted to UserError before propagating.
+
+A caller-supplied identifier is truncated to MAX_IDENTIFIER_CHARS before it goes
+into a message, so a token pasted into the wrong argument is not echoed back.
 """
 
 import os
+
+MAX_IDENTIFIER_CHARS = 20
 
 
 class UserError(Exception):
@@ -48,8 +53,11 @@ class ZoneNotFoundError(UserError):
     """Zone not found or not accessible."""
 
     def __init__(self, identifier: str) -> None:
-        # Don't include the full identifier in case it contains sensitive data
-        safe_id = identifier[:20] + "..." if len(identifier) > 20 else identifier
+        safe_id = (
+            identifier[:MAX_IDENTIFIER_CHARS] + "..."
+            if len(identifier) > MAX_IDENTIFIER_CHARS
+            else identifier
+        )
         super().__init__(f"Zone not found or not accessible: {safe_id}")
 
 

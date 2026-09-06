@@ -6,7 +6,7 @@ Tools for listing and retrieving Cloudflare zone information.
 from typing import Any
 
 from ..client import get_client
-from ..models import validate_zone_id
+from ..models import validate_hex_id
 
 
 async def list_zones(
@@ -77,7 +77,7 @@ async def get_zone(
         return {"error": "Either zone_id or zone_name must be provided"}
 
     # Validate zone_id format
-    zone_id = validate_zone_id(zone_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
 
     response = await client.get(f"/zones/{zone_id}")
 

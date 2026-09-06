@@ -15,34 +15,28 @@ from typing import Any
 
 from ..client import get_client
 from ..errors import CloudflareApiError
-from ..models import validate_zone_id
+from ..models import validate_hex_id
+
+DATE_FORMAT = "%Y-%m-%d"
+DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+DEFAULT_DATE_WINDOW = timedelta(days=30)
+# Adaptive datasets have a tighter time range limit than the daily rollups.
+DEFAULT_DATETIME_WINDOW = timedelta(hours=24)
 
 
-def _default_date_range(
-    since: str | None, until: str | None
+def _default_range(
+    since: str | None,
+    until: str | None,
+    *,
+    fmt: str,
+    window: timedelta,
 ) -> tuple[str, str]:
-    """Return ISO date strings defaulting to the last 30 days."""
+    """Fill in whichever end of the range the caller left open."""
     now = datetime.now(timezone.utc)
-    if until is None:
-        until = now.strftime("%Y-%m-%d")
-    if since is None:
-        since = (now - timedelta(days=30)).strftime("%Y-%m-%d")
-    return since, until
-
-
-def _default_datetime_range(
-    since: str | None, until: str | None
-) -> tuple[str, str]:
-    """Return ISO datetime strings defaulting to the last 24 hours.
-
-    Used for adaptive datasets which have tighter time range limits.
-    """
-    now = datetime.now(timezone.utc)
-    if until is None:
-        until = now.strftime("%Y-%m-%dT%H:%M:%SZ")
-    if since is None:
-        since = (now - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    return since, until
+    return (
+        since if since is not None else (now - window).strftime(fmt),
+        until if until is not None else now.strftime(fmt),
+    )
 
 
 async def get_zone_analytics(
@@ -63,8 +57,8 @@ async def get_zone_analytics(
     Returns:
         Analytics summary dictionary
     """
-    zone_id = validate_zone_id(zone_id)
-    since, until = _default_date_range(since, until)
+    zone_id = validate_hex_id(zone_id, "zone_id")
+    since, until = _default_range(since, until, fmt=DATE_FORMAT, window=DEFAULT_DATE_WINDOW)
     client = get_client()
 
     query = """
@@ -103,11 +97,14 @@ async def get_zone_analytics(
     }
     """
 
-    data = await client.graphql(query, {
-        "zoneTag": zone_id,
-        "since": since,
-        "until": until,
-    })
+    data = await client.graphql(
+        query,
+        {
+            "zoneTag": zone_id,
+            "since": since,
+            "until": until,
+        },
+    )
 
     zones = data.get("viewer", {}).get("zones", [])
     if not zones:
@@ -124,9 +121,7 @@ async def get_zone_analytics(
     for day in zone_data.get("statusCodes", []):
         for entry in day.get("sum", {}).get("responseStatusMap", []):
             status = str(entry.get("edgeResponseStatus", "unknown"))
-            status_breakdown[status] = (
-                status_breakdown.get(status, 0) + entry.get("requests", 0)
-            )
+            status_breakdown[status] = status_breakdown.get(status, 0) + entry.get("requests", 0)
 
     total_requests = sums.get("requests", 0)
     cached_requests = sums.get("cachedRequests", 0)
@@ -176,8 +171,8 @@ async def get_top_pages(
     Returns:
         Top pages with request counts and bandwidth
     """
-    zone_id = validate_zone_id(zone_id)
-    since, until = _default_datetime_range(since, until)
+    zone_id = validate_hex_id(zone_id, "zone_id")
+    since, until = _default_range(since, until, fmt=DATETIME_FORMAT, window=DEFAULT_DATETIME_WINDOW)
     client = get_client()
 
     query = """
@@ -204,12 +199,15 @@ async def get_top_pages(
     }
     """
 
-    data = await client.graphql(query, {
-        "zoneTag": zone_id,
-        "since": since,
-        "until": until,
-        "limit": limit,
-    })
+    data = await client.graphql(
+        query,
+        {
+            "zoneTag": zone_id,
+            "since": since,
+            "until": until,
+            "limit": limit,
+        },
+    )
 
     zones = data.get("viewer", {}).get("zones", [])
     if not zones:
@@ -218,11 +216,13 @@ async def get_top_pages(
     pages = []
     for group in zones[0].get("httpRequestsAdaptiveGroups", []):
         path = group.get("dimensions", {}).get("clientRequestPath", "unknown")
-        pages.append({
-            "path": path,
-            "requests": group.get("count", 0),
-            "bytes": group.get("sum", {}).get("edgeResponseBytes", 0),
-        })
+        pages.append(
+            {
+                "path": path,
+                "requests": group.get("count", 0),
+                "bytes": group.get("sum", {}).get("edgeResponseBytes", 0),
+            }
+        )
 
     return {
         "period": {"since": since, "until": until},
@@ -250,8 +250,8 @@ async def get_traffic_by_country(
     Returns:
         Country breakdown with request counts
     """
-    zone_id = validate_zone_id(zone_id)
-    since, until = _default_datetime_range(since, until)
+    zone_id = validate_hex_id(zone_id, "zone_id")
+    since, until = _default_range(since, until, fmt=DATETIME_FORMAT, window=DEFAULT_DATETIME_WINDOW)
     client = get_client()
 
     query = """
@@ -278,12 +278,15 @@ async def get_traffic_by_country(
     }
     """
 
-    data = await client.graphql(query, {
-        "zoneTag": zone_id,
-        "since": since,
-        "until": until,
-        "limit": limit,
-    })
+    data = await client.graphql(
+        query,
+        {
+            "zoneTag": zone_id,
+            "since": since,
+            "until": until,
+            "limit": limit,
+        },
+    )
 
     zones = data.get("viewer", {}).get("zones", [])
     if not zones:
@@ -292,11 +295,13 @@ async def get_traffic_by_country(
     countries = []
     for group in zones[0].get("httpRequestsAdaptiveGroups", []):
         country = group.get("dimensions", {}).get("clientCountryName", "Unknown")
-        countries.append({
-            "country": country,
-            "requests": group.get("count", 0),
-            "bytes": group.get("sum", {}).get("edgeResponseBytes", 0),
-        })
+        countries.append(
+            {
+                "country": country,
+                "requests": group.get("count", 0),
+                "bytes": group.get("sum", {}).get("edgeResponseBytes", 0),
+            }
+        )
 
     return {
         "period": {"since": since, "until": until},
@@ -324,8 +329,8 @@ async def get_security_events(
     Returns:
         Security events grouped by action with source details
     """
-    zone_id = validate_zone_id(zone_id)
-    since, until = _default_datetime_range(since, until)
+    zone_id = validate_hex_id(zone_id, "zone_id")
+    since, until = _default_range(since, until, fmt=DATETIME_FORMAT, window=DEFAULT_DATETIME_WINDOW)
     client = get_client()
 
     query = """
@@ -352,12 +357,15 @@ async def get_security_events(
     """
 
     try:
-        data = await client.graphql(query, {
-            "zoneTag": zone_id,
-            "since": since,
-            "until": until,
-            "limit": limit,
-        })
+        data = await client.graphql(
+            query,
+            {
+                "zoneTag": zone_id,
+                "since": since,
+                "until": until,
+                "limit": limit,
+            },
+        )
     except CloudflareApiError as e:
         if "does not have access" in str(e):
             return {
@@ -372,12 +380,14 @@ async def get_security_events(
     events = []
     for group in zones[0].get("firewallEventsAdaptiveGroups", []):
         dims = group.get("dimensions", {})
-        events.append({
-            "action": dims.get("action", "unknown"),
-            "country": dims.get("clientCountryName", "Unknown"),
-            "source": dims.get("source", "unknown"),
-            "count": group.get("count", 0),
-        })
+        events.append(
+            {
+                "action": dims.get("action", "unknown"),
+                "country": dims.get("clientCountryName", "Unknown"),
+                "source": dims.get("source", "unknown"),
+                "count": group.get("count", 0),
+            }
+        )
 
     return {
         "period": {"since": since, "until": until},

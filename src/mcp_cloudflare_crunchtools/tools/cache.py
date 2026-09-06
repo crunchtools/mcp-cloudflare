@@ -6,7 +6,7 @@ Tools for purging Cloudflare cache.
 from typing import Any
 
 from ..client import get_client
-from ..models import validate_zone_id
+from ..models import validate_hex_id
 
 
 async def purge_cache(
@@ -50,7 +50,7 @@ async def purge_cache(
         # Purge by cache tag (Enterprise)
         purge_cache(zone_id="...", tags=["static-assets", "images"])
     """
-    zone_id = validate_zone_id(zone_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
     client = get_client()
 
     body: dict[str, Any] = {}
@@ -67,9 +67,7 @@ async def purge_cache(
     elif prefixes:
         body["prefixes"] = prefixes[:30]
     else:
-        return {
-            "error": "Must specify purge_everything, files, tags, hosts, or prefixes"
-        }
+        return {"error": "Must specify purge_everything, files, tags, hosts, or prefixes"}
 
     response = await client.post(f"/zones/{zone_id}/purge_cache", json_data=body)
 

@@ -9,19 +9,21 @@ Free plans support up to 5 custom rules.
 from typing import Any
 
 from ..client import get_client
-from ..models import validate_rule_id, validate_zone_id
+from ..models import validate_hex_id
 
 WAF_PHASE = "http_request_firewall_custom"
 
 # Valid actions for free/pro plans
-VALID_ACTIONS = frozenset({
-    "managed_challenge",
-    "block",
-    "js_challenge",
-    "challenge",
-    "skip",
-    "log",
-})
+VALID_ACTIONS = frozenset(
+    {
+        "managed_challenge",
+        "block",
+        "js_challenge",
+        "challenge",
+        "skip",
+        "log",
+    }
+)
 
 
 async def _get_waf_ruleset(
@@ -49,28 +51,27 @@ async def list_waf_rules(zone_id: str) -> dict[str, Any]:
     Returns:
         List of WAF rules with their expressions, actions, and status
     """
-    zone_id = validate_zone_id(zone_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
     client = get_client()
 
     ruleset = await _get_waf_ruleset(zone_id)
     if not ruleset:
         return {"rules": [], "ruleset_id": None}
 
-    # Fetch the full ruleset to get rule details
-    response = await client.get(
-        f"/zones/{zone_id}/rulesets/{ruleset['id']}"
-    )
+    response = await client.get(f"/zones/{zone_id}/rulesets/{ruleset['id']}")
     result = response.get("result", {})
 
     rules = []
     for rule in result.get("rules", []):
-        rules.append({
-            "id": rule.get("id"),
-            "description": rule.get("description", ""),
-            "expression": rule.get("expression", ""),
-            "action": rule.get("action", ""),
-            "enabled": rule.get("enabled", True),
-        })
+        rules.append(
+            {
+                "id": rule.get("id"),
+                "description": rule.get("description", ""),
+                "expression": rule.get("expression", ""),
+                "action": rule.get("action", ""),
+                "enabled": rule.get("enabled", True),
+            }
+        )
 
     return {
         "rules": rules,
@@ -103,7 +104,7 @@ async def create_waf_rule(
     Returns:
         Created rule details
     """
-    zone_id = validate_zone_id(zone_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
 
     if action not in VALID_ACTIONS:
         return {"error": f"Invalid action. Must be one of: {', '.join(sorted(VALID_ACTIONS))}"}
@@ -119,13 +120,11 @@ async def create_waf_rule(
     }
 
     if ruleset:
-        # Add rule to existing ruleset
         response = await client.post(
             f"/zones/{zone_id}/rulesets/{ruleset['id']}/rules",
             json_data=rule_data,
         )
     else:
-        # Create new ruleset with this rule
         response = await client.post(
             f"/zones/{zone_id}/rulesets",
             json_data={
@@ -140,7 +139,6 @@ async def create_waf_rule(
     result = response.get("result", {})
     rules = result.get("rules", [])
 
-    # Return the last rule (the one just created)
     created_rule = rules[-1] if rules else {}
 
     return {
@@ -177,8 +175,8 @@ async def update_waf_rule(
     Returns:
         Updated rule details
     """
-    zone_id = validate_zone_id(zone_id)
-    rule_id = validate_rule_id(rule_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
+    rule_id = validate_hex_id(rule_id, "rule_id")
 
     if action is not None and action not in VALID_ACTIONS:
         return {"error": f"Invalid action. Must be one of: {', '.join(sorted(VALID_ACTIONS))}"}
@@ -208,7 +206,6 @@ async def update_waf_rule(
 
     result = response.get("result", {})
 
-    # Find the updated rule in the response
     updated_rule = {}
     for rule in result.get("rules", []):
         if rule.get("id") == rule_id:
@@ -239,8 +236,8 @@ async def delete_waf_rule(
     Returns:
         Deletion confirmation
     """
-    zone_id = validate_zone_id(zone_id)
-    rule_id = validate_rule_id(rule_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
+    rule_id = validate_hex_id(rule_id, "rule_id")
     client = get_client()
 
     ruleset = await _get_waf_ruleset(zone_id)
