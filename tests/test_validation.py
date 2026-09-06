@@ -7,9 +7,7 @@ from mcp_cloudflare_crunchtools.models import (
     DnsRecordInput,
     DnsRecordUpdateInput,
     ZoneInput,
-    validate_record_id,
-    validate_rule_id,
-    validate_zone_id,
+    validate_hex_id,
 )
 
 
@@ -19,27 +17,27 @@ class TestZoneIdValidation:
     def test_valid_zone_id(self) -> None:
         """Valid 32-character hex string should pass."""
         zone_id = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4"
-        assert validate_zone_id(zone_id) == zone_id
+        assert validate_hex_id(zone_id, "zone_id") == zone_id
 
     def test_invalid_zone_id_too_short(self) -> None:
         """Zone ID that is too short should fail."""
         with pytest.raises(ValueError, match="32-character hex"):
-            validate_zone_id("abc123")
+            validate_hex_id("abc123", "zone_id")
 
     def test_invalid_zone_id_too_long(self) -> None:
         """Zone ID that is too long should fail."""
         with pytest.raises(ValueError, match="32-character hex"):
-            validate_zone_id("a" * 33)
+            validate_hex_id("a" * 33, "zone_id")
 
     def test_invalid_zone_id_non_hex(self) -> None:
         """Zone ID with non-hex characters should fail."""
         with pytest.raises(ValueError, match="32-character hex"):
-            validate_zone_id("g" * 32)  # 'g' is not hex
+            validate_hex_id("g" * 32, "zone_id")  # 'g' is not hex
 
     def test_invalid_zone_id_uppercase(self) -> None:
         """Zone ID with uppercase should fail (Cloudflare uses lowercase)."""
         with pytest.raises(ValueError, match="32-character hex"):
-            validate_zone_id("A" * 32)
+            validate_hex_id("A" * 32, "zone_id")
 
 
 class TestRecordIdValidation:
@@ -48,12 +46,12 @@ class TestRecordIdValidation:
     def test_valid_record_id(self) -> None:
         """Valid 32-character hex string should pass."""
         record_id = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4"
-        assert validate_record_id(record_id) == record_id
+        assert validate_hex_id(record_id, "record_id") == record_id
 
     def test_invalid_record_id(self) -> None:
         """Invalid record ID should fail."""
         with pytest.raises(ValueError, match="32-character hex"):
-            validate_record_id("invalid")
+            validate_hex_id("invalid", "record_id")
 
 
 class TestRuleIdValidation:
@@ -62,12 +60,12 @@ class TestRuleIdValidation:
     def test_valid_rule_id(self) -> None:
         """Valid 32-character hex string should pass."""
         rule_id = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4"
-        assert validate_rule_id(rule_id) == rule_id
+        assert validate_hex_id(rule_id, "rule_id") == rule_id
 
     def test_invalid_rule_id(self) -> None:
         """Invalid rule ID should fail."""
         with pytest.raises(ValueError, match="32-character hex"):
-            validate_rule_id("invalid")
+            validate_hex_id("invalid", "rule_id")
 
 
 class TestZoneInput:

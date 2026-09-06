@@ -103,39 +103,32 @@ class CloudflareClient:
         except httpx.RequestError as e:
             raise CloudflareApiError(0, f"Request failed: {e}") from e
 
-        # Check response size before parsing
         content_length = response.headers.get("content-length")
         if content_length and int(content_length) > MAX_RESPONSE_SIZE:
             raise CloudflareApiError(0, "Response too large")
 
-        # Parse response
         try:
-            data = response.json()
+            payload: dict[str, Any] = response.json()
         except ValueError as e:
-            raise CloudflareApiError(
-                response.status_code, f"Invalid JSON response: {e}"
-            ) from e
+            raise CloudflareApiError(response.status_code, f"Invalid JSON response: {e}") from e
 
-        # Handle error responses
         if not response.is_success:
-            self._handle_error_response(response.status_code, data)
+            self._handle_error_response(response.status_code, payload)
 
-        return data  # type: ignore[no-any-return]
+        return payload
 
-    def _handle_error_response(
-        self, status_code: int, data: dict[str, Any]
-    ) -> None:
+    def _handle_error_response(self, status_code: int, payload: dict[str, Any]) -> None:
         """Handle error responses from the API.
 
         Args:
             status_code: HTTP status code
-            data: Response data
+            payload: Parsed response body
 
         Raises:
             Various UserError subclasses based on error type
         """
         # Extract error details
-        errors = data.get("errors", [])
+        errors = payload.get("errors", [])
         error_msg = errors[0].get("message", "Unknown error") if errors else "Unknown error"
         error_code = errors[0].get("code", 0) if errors else 0
 
@@ -147,16 +140,14 @@ class CloudflareClient:
         if status_code == 404:
             raise ZoneNotFoundError(error_msg)
         if status_code == 429:
-            retry_after = data.get("retry_after")
+            retry_after = payload.get("retry_after")
             raise RateLimitError(retry_after)
 
         raise CloudflareApiError(error_code, error_msg)
 
     # Convenience methods for HTTP verbs
 
-    async def get(
-        self, path: str, params: dict[str, Any] | None = None
-    ) -> dict[str, Any]:
+    async def get(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
         """Make a GET request."""
         return await self._request("GET", path, params=params)
 

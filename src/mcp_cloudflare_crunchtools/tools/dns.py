@@ -9,8 +9,7 @@ from ..client import get_client
 from ..models import (
     DnsRecordInput,
     DnsRecordUpdateInput,
-    validate_record_id,
-    validate_zone_id,
+    validate_hex_id,
 )
 
 
@@ -35,7 +34,7 @@ async def list_dns_records(
     Returns:
         Dictionary containing DNS records list and pagination info
     """
-    zone_id = validate_zone_id(zone_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
     client = get_client()
 
     params: dict[str, Any] = {
@@ -71,8 +70,8 @@ async def get_dns_record(
     Returns:
         DNS record details
     """
-    zone_id = validate_zone_id(zone_id)
-    record_id = validate_record_id(record_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
+    record_id = validate_hex_id(record_id, "record_id")
     client = get_client()
 
     response = await client.get(f"/zones/{zone_id}/dns_records/{record_id}")
@@ -105,7 +104,7 @@ async def create_dns_record(
     Returns:
         Created DNS record details
     """
-    zone_id = validate_zone_id(zone_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
 
     # Validate input using Pydantic model
     record_input = DnsRecordInput(
@@ -166,8 +165,8 @@ async def update_dns_record(
     Returns:
         Updated DNS record details
     """
-    zone_id = validate_zone_id(zone_id)
-    record_id = validate_record_id(record_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
+    record_id = validate_hex_id(record_id, "record_id")
 
     # Validate input using Pydantic model
     update_input = DnsRecordUpdateInput(
@@ -221,8 +220,8 @@ async def delete_dns_record(
     Returns:
         Deletion confirmation with record ID
     """
-    zone_id = validate_zone_id(zone_id)
-    record_id = validate_record_id(record_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
+    record_id = validate_hex_id(record_id, "record_id")
     client = get_client()
 
     response = await client.delete(f"/zones/{zone_id}/dns_records/{record_id}")

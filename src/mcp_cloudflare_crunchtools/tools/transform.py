@@ -7,7 +7,7 @@ response headers, and URL rewrites.
 from typing import Any
 
 from ..client import get_client
-from ..models import validate_zone_id
+from ..models import validate_hex_id
 
 # Cloudflare ruleset phases for transform rules
 PHASE_REQUEST_HEADERS = "http_request_late_transform"
@@ -89,7 +89,7 @@ async def list_request_header_rules(zone_id: str) -> dict[str, Any]:
     Returns:
         Dictionary containing the ruleset and its rules
     """
-    zone_id = validate_zone_id(zone_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
     ruleset = await _get_ruleset(zone_id, PHASE_REQUEST_HEADERS)
 
     return {
@@ -133,7 +133,7 @@ async def set_request_header_rules(
     Returns:
         Updated ruleset details
     """
-    zone_id = validate_zone_id(zone_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
     ruleset = await _update_ruleset(zone_id, PHASE_REQUEST_HEADERS, rules)
 
     return {
@@ -155,7 +155,7 @@ async def list_response_header_rules(zone_id: str) -> dict[str, Any]:
     Returns:
         Dictionary containing the ruleset and its rules
     """
-    zone_id = validate_zone_id(zone_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
     ruleset = await _get_ruleset(zone_id, PHASE_RESPONSE_HEADERS)
 
     return {
@@ -199,7 +199,7 @@ async def set_response_header_rules(
     Returns:
         Updated ruleset details
     """
-    zone_id = validate_zone_id(zone_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
     ruleset = await _update_ruleset(zone_id, PHASE_RESPONSE_HEADERS, rules)
 
     return {
@@ -221,7 +221,7 @@ async def list_url_rewrite_rules(zone_id: str) -> dict[str, Any]:
     Returns:
         Dictionary containing the ruleset and its rules
     """
-    zone_id = validate_zone_id(zone_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
     ruleset = await _get_ruleset(zone_id, PHASE_URL_REWRITE)
 
     return {
@@ -264,7 +264,7 @@ async def set_url_rewrite_rules(
     Returns:
         Updated ruleset details
     """
-    zone_id = validate_zone_id(zone_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
     ruleset = await _update_ruleset(zone_id, PHASE_URL_REWRITE, rules)
 
     return {

@@ -6,7 +6,7 @@ Tools for managing Cloudflare Page Rules.
 from typing import Any
 
 from ..client import get_client
-from ..models import validate_rule_id, validate_zone_id
+from ..models import validate_hex_id
 
 
 async def list_page_rules(
@@ -24,7 +24,7 @@ async def list_page_rules(
     Returns:
         Dictionary containing page rules list
     """
-    zone_id = validate_zone_id(zone_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
     client = get_client()
 
     params: dict[str, Any] = {
@@ -71,7 +71,7 @@ async def create_page_rule(
     - disable_security: Disable security features
     - ssl: Set SSL mode (off, flexible, full, strict)
     """
-    zone_id = validate_zone_id(zone_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
     client = get_client()
 
     body = {
@@ -107,8 +107,8 @@ async def update_page_rule(
     Returns:
         Updated page rule details
     """
-    zone_id = validate_zone_id(zone_id)
-    rule_id = validate_rule_id(rule_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
+    rule_id = validate_hex_id(rule_id, "rule_id")
     client = get_client()
 
     body: dict[str, Any] = {}
@@ -143,8 +143,8 @@ async def delete_page_rule(
     Returns:
         Deletion confirmation
     """
-    zone_id = validate_zone_id(zone_id)
-    rule_id = validate_rule_id(rule_id)
+    zone_id = validate_hex_id(zone_id, "zone_id")
+    rule_id = validate_hex_id(rule_id, "rule_id")
     client = get_client()
 
     response = await client.delete(f"/zones/{zone_id}/pagerules/{rule_id}")

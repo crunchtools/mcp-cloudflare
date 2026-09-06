@@ -24,3 +24,13 @@ justification = "HTTP status codes (401, 403, 404, 429) and timeout (30s) are st
 check = "primitive_obsession"
 path = "tests/conftest.py"
 justification = "HTTP status code 200 and cf.example.com URL are standard test fixture patterns"
+
+[[exceptions]]
+check = "lint_suppression"
+path = "tests/test_validation.py"
+justification = "`# type: ignore[call-arg]` is the point of the test: it passes an argument the model forbids, to prove extra=\"forbid\" rejects it. Without the suppression the test cannot be written."
+
+[[exceptions]]
+check = "copy_paste_detection"
+path = "src/mcp_cloudflare_crunchtools/client.py"
+justification = "get_client and get_config are both the four-line lazy-singleton accessor. The duplication is the idiom; factoring it out behind a generic would cost more than it saves and obscures which global is being initialised."
