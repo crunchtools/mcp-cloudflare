@@ -97,7 +97,7 @@ async def get_zone_analytics(
     }
     """
 
-    data = await client.graphql(
+    graphql_response = await client.graphql(
         query,
         {
             "zoneTag": zone_id,
@@ -106,7 +106,7 @@ async def get_zone_analytics(
         },
     )
 
-    zones = data.get("viewer", {}).get("zones", [])
+    zones = graphql_response.get("viewer", {}).get("zones", [])
     if not zones:
         return {"error": "No analytics data found for this zone"}
 
@@ -199,7 +199,7 @@ async def get_top_pages(
     }
     """
 
-    data = await client.graphql(
+    graphql_response = await client.graphql(
         query,
         {
             "zoneTag": zone_id,
@@ -209,7 +209,7 @@ async def get_top_pages(
         },
     )
 
-    zones = data.get("viewer", {}).get("zones", [])
+    zones = graphql_response.get("viewer", {}).get("zones", [])
     if not zones:
         return {"error": "No analytics data found for this zone"}
 
@@ -278,7 +278,7 @@ async def get_traffic_by_country(
     }
     """
 
-    data = await client.graphql(
+    graphql_response = await client.graphql(
         query,
         {
             "zoneTag": zone_id,
@@ -288,7 +288,7 @@ async def get_traffic_by_country(
         },
     )
 
-    zones = data.get("viewer", {}).get("zones", [])
+    zones = graphql_response.get("viewer", {}).get("zones", [])
     if not zones:
         return {"error": "No analytics data found for this zone"}
 
@@ -357,7 +357,7 @@ async def get_security_events(
     """
 
     try:
-        data = await client.graphql(
+        graphql_response = await client.graphql(
             query,
             {
                 "zoneTag": zone_id,
@@ -373,7 +373,7 @@ async def get_security_events(
             }
         raise
 
-    zones = data.get("viewer", {}).get("zones", [])
+    zones = graphql_response.get("viewer", {}).get("zones", [])
     if not zones:
         return {"error": "No security data found for this zone"}
 

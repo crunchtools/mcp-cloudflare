@@ -1,36 +1,81 @@
-# Gourmand Exceptions
-# Documented exceptions for files that legitimately trigger checks
-
-# Summary litter — CLAUDE.md is a standard Claude Code project instructions file
-[[exceptions]]
-check = "summary_litter"
-path = "CLAUDE.md"
-justification = "Claude Code project instructions for AI assistant orientation"
 
 # Primitive obsession — port 8000 is a standard default for HTTP servers
 [[exceptions]]
 check = "primitive_obsession"
 path = "src/mcp_cloudflare_crunchtools/__init__.py"
 justification = "Port 8000 is a standard default for HTTP servers"
-
-# Primitive obsession — HTTP status codes and timeout are standard API patterns
-[[exceptions]]
-check = "primitive_obsession"
-path = "src/mcp_cloudflare_crunchtools/client.py"
-justification = "HTTP status codes (401, 403, 404, 429) and timeout (30s) are standard well-known constants"
-
-# Primitive obsession — HTTP status code 200 and mock URL are standard test patterns
-[[exceptions]]
-check = "primitive_obsession"
-path = "tests/conftest.py"
-justification = "HTTP status code 200 and cf.example.com URL are standard test fixture patterns"
+classification = "by_design"
 
 [[exceptions]]
 check = "lint_suppression"
 path = "tests/test_validation.py"
 justification = "`# type: ignore[call-arg]` is the point of the test: it passes an argument the model forbids, to prove extra=\"forbid\" rejects it. Without the suppression the test cannot be written."
+classification = "by_design"
 
 [[exceptions]]
 check = "copy_paste_detection"
 path = "src/mcp_cloudflare_crunchtools/client.py"
 justification = "get_client and get_config are both the four-line lazy-singleton accessor. The duplication is the idiom; factoring it out behind a generic would cost more than it saves and obscures which global is being initialised."
+classification = "by_design"
+
+# Hidden env config — CLOUDFLARE_API_TOKEN is documented in CLAUDE.md's
+# Environment Variables table and in README.md's setup walkthrough. Not
+# adding it to allowed_names, per upstream guidance: this exception is the
+# confirmation that it is documented, not a silencing of the check.
+[[exceptions]]
+check = "hidden_env_config"
+path = "src/mcp_cloudflare_crunchtools/config.py"
+justification = "CLOUDFLARE_API_TOKEN is documented in CLAUDE.md's Environment Variables table and in README.md's setup instructions"
+classification = "by_design"
+
+[[exceptions]]
+check = "hidden_env_config"
+path = "src/mcp_cloudflare_crunchtools/errors.py"
+justification = "CLOUDFLARE_API_TOKEN is documented in CLAUDE.md's Environment Variables table; referenced here only to redact it from error messages"
+classification = "by_design"
+
+# Test-only: exercises token redaction and config error handling, not
+# user-facing configuration.
+[[exceptions]]
+check = "hidden_env_config"
+path = "tests/test_tools.py"
+justification = "CLOUDFLARE_API_TOKEN references here are test fixtures for token-redaction and config-loading tests, not user-facing configuration"
+classification = "by_design"
+
+# Manifest lint suppression on pyproject.toml, split by what was actually
+# reviewed:
+#
+# Tightened to per-file-ignores (reviewed, narrow, single- or two-file scope,
+# confirmed against actual violation sites with `ruff check --select <code>`):
+# S101/S105 (tests-only, neither fires in src/), PLC0415 (server.py's one
+# deferred import avoiding a circular import), PLR2004/PLW0603 (client.py's
+# HTTP-status dispatch and singleton global; PLW0603 also on config.py's
+# singleton), PIE790 (errors.py's empty exception-class bodies), RUF022
+# (tools/__init__.py's only __all__, grouped by category).
+#
+# Left as global ignores, NOT individually reviewed line-by-line: TRY003
+# (3 files), PLR0913 + PLR0917 (same 13 call sites across server.py + 4
+# tools/*.py -- one Pylint counter for total arguments, one for positional
+# only), TID252 (7 files under tools/). These are plausibly legitimate
+# project-wide patterns (MCP tool signatures mirroring the wire API for
+# PLR0913/PLR0917, relative imports within the package for TID252) but that
+# has not been verified function-by-function — e.g. some tools already use a
+# bundled Pydantic input model (DnsRecordInput) instead of many positional
+# args, so PLR0913/PLR0917's breadth may be masking inconsistent design
+# rather than a uniform decision. Classified accepted_bad_taste pending a
+# fleet-wide ruff policy decision on whether these codes belong in every
+# crunchtools MCP server's ignore list or should be fixed per-callsite; this
+# is a fleet-wide call, not a per-repo one, so it is not stamped by_design
+# here.
+#
+# CAUTION: PLR0913 and PLR0917 are both active (non-preview) in this
+# project's locked ruff (0.16.8, per uv.lock) -- do not drop either as a
+# "no-op" based on a bare `ruff --version` on PATH; verify with
+# `uv sync --all-extras && uv run ruff check .` inside this project's own
+# venv. A prior pass here dropped PLR0917 on exactly that mistake and broke
+# CI on all three Python versions before being caught and reverted.
+[[exceptions]]
+check = "manifest_lint_suppression"
+path = "pyproject.toml"
+justification = "TRY003, PLR0913, PLR0917, and TID252 remain as global ignores without individual line-by-line review across every file they touch; real debt until a fleet-wide ruff policy decision resolves whether they are architecturally justified or should be fixed per-callsite. All other ignore entries were tightened to per-file-ignores scoped to their confirmed, reviewed violation sites."
+classification = "accepted_bad_taste"

@@ -2,6 +2,12 @@
 
 This is a secure MCP server for Cloudflare DNS, Transform Rules, Page Rules, and cache management.
 
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `CLOUDFLARE_API_TOKEN` | Yes | Cloudflare API token (see [Creating a Cloudflare API Token](#creating-a-cloudflare-api-token)) |
+
 ## Quick Start
 
 ### Option 1: Using uvx (Recommended)

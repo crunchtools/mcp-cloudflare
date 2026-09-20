@@ -43,7 +43,6 @@ async def _update_ruleset(
     """Update or create a ruleset for a specific phase."""
     client = get_client()
 
-    # Check if ruleset exists
     response = await client.get(f"/zones/{zone_id}/rulesets")
     rulesets = response.get("result", [])
 
@@ -58,7 +57,6 @@ async def _update_ruleset(
     }
 
     if existing_ruleset_id:
-        # Update existing ruleset
         response = await client.put(
             f"/zones/{zone_id}/rulesets/{existing_ruleset_id}",
             json_data=body,

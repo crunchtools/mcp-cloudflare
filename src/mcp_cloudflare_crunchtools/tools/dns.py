@@ -106,7 +106,6 @@ async def create_dns_record(
     """
     zone_id = validate_hex_id(zone_id, "zone_id")
 
-    # Validate input using Pydantic model
     record_input = DnsRecordInput(
         type=type,
         name=name,
@@ -168,7 +167,6 @@ async def update_dns_record(
     zone_id = validate_hex_id(zone_id, "zone_id")
     record_id = validate_hex_id(record_id, "record_id")
 
-    # Validate input using Pydantic model
     update_input = DnsRecordUpdateInput(
         type=type,
         name=name,
