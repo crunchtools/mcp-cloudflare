@@ -53,7 +53,11 @@ ignore = [
     # awaiting a fleet-wide ruff policy decision rather than a per-repo call.
     # See gourmand-exceptions.toml (EV002) for the classification rationale.
     "TRY003",   # long exception messages outside the exception class (3 files)
-    "PLR0913",  # too many arguments (5 files: server.py + 4 tools/*.py)
+    "PLR0913",  # too many arguments (5 files: server.py + 4 tools/*.py) --
+                # MCP tool signatures take one parameter per Cloudflare API
+                # field by design, mirroring the wire API
+    "PLR0917",  # too many POSITIONAL arguments -- identical call sites to
+                # PLR0913 (same underlying pattern, different pylint counter)
     "TID252",   # relative imports within the package (7 files under tools/)
 ]
 

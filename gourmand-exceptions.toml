@@ -54,19 +54,28 @@ classification = "by_design"
 # (tools/__init__.py's only __all__, grouped by category).
 #
 # Left as global ignores, NOT individually reviewed line-by-line: TRY003
-# (3 files), PLR0913 (5 files: server.py + 4 tools/*.py), TID252 (7 files
-# under tools/). These are plausibly legitimate project-wide patterns (MCP
-# tool signatures mirroring the wire API for PLR0913, relative imports within
-# the package for TID252) but that has not been verified function-by-function
-# — e.g. some tools already use a bundled Pydantic input model (DnsRecordInput)
-# instead of many positional args, so PLR0913's breadth may be masking
-# inconsistent design rather than a uniform decision. Classified
-# accepted_bad_taste pending a fleet-wide ruff policy decision on whether
-# these three codes belong in every crunchtools MCP server's ignore list or
-# should be fixed per-callsite; this is a fleet-wide call, not a per-repo one,
-# so it is not stamped by_design here.
+# (3 files), PLR0913 + PLR0917 (same 13 call sites across server.py + 4
+# tools/*.py -- one Pylint counter for total arguments, one for positional
+# only), TID252 (7 files under tools/). These are plausibly legitimate
+# project-wide patterns (MCP tool signatures mirroring the wire API for
+# PLR0913/PLR0917, relative imports within the package for TID252) but that
+# has not been verified function-by-function — e.g. some tools already use a
+# bundled Pydantic input model (DnsRecordInput) instead of many positional
+# args, so PLR0913/PLR0917's breadth may be masking inconsistent design
+# rather than a uniform decision. Classified accepted_bad_taste pending a
+# fleet-wide ruff policy decision on whether these codes belong in every
+# crunchtools MCP server's ignore list or should be fixed per-callsite; this
+# is a fleet-wide call, not a per-repo one, so it is not stamped by_design
+# here.
+#
+# CAUTION: PLR0913 and PLR0917 are both active (non-preview) in this
+# project's locked ruff (0.16.8, per uv.lock) -- do not drop either as a
+# "no-op" based on a bare `ruff --version` on PATH; verify with
+# `uv sync --all-extras && uv run ruff check .` inside this project's own
+# venv. A prior pass here dropped PLR0917 on exactly that mistake and broke
+# CI on all three Python versions before being caught and reverted.
 [[exceptions]]
 check = "manifest_lint_suppression"
 path = "pyproject.toml"
-justification = "TRY003, PLR0913, and TID252 remain as global ignores without individual line-by-line review across every file they touch; real debt until a fleet-wide ruff policy decision resolves whether they are architecturally justified or should be fixed per-callsite. All other ignore entries were tightened to per-file-ignores scoped to their confirmed, reviewed violation sites."
+justification = "TRY003, PLR0913, PLR0917, and TID252 remain as global ignores without individual line-by-line review across every file they touch; real debt until a fleet-wide ruff policy decision resolves whether they are architecturally justified or should be fixed per-callsite. All other ignore entries were tightened to per-file-ignores scoped to their confirmed, reviewed violation sites."
 classification = "accepted_bad_taste"
