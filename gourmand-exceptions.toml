@@ -42,17 +42,31 @@ path = "tests/test_tools.py"
 justification = "CLOUDFLARE_API_TOKEN references here are test fixtures for token-redaction and config-loading tests, not user-facing configuration"
 classification = "by_design"
 
-# Manifest lint suppression — every ignore below is a project-wide style
-# choice (not a quality/correctness lint) with an inline comment stating the
-# reason: long exception messages, MCP tool signatures mirroring the wire
-# API's positional/keyword shape, HTTP status codes as literals, the
-# module-global singleton pattern, empty-class bodies, a deferred import in
-# server.py that avoids a circular import, relative imports within the
-# package, and __all__ grouped by category. S101 (assert) and S105
-# (hardcoded-password false positive on test fixtures) are tests-only
-# per-file-ignores since neither fires in src/.
+# Manifest lint suppression on pyproject.toml, split by what was actually
+# reviewed:
+#
+# Tightened to per-file-ignores (reviewed, narrow, single- or two-file scope,
+# confirmed against actual violation sites with `ruff check --select <code>`):
+# S101/S105 (tests-only, neither fires in src/), PLC0415 (server.py's one
+# deferred import avoiding a circular import), PLR2004/PLW0603 (client.py's
+# HTTP-status dispatch and singleton global; PLW0603 also on config.py's
+# singleton), PIE790 (errors.py's empty exception-class bodies), RUF022
+# (tools/__init__.py's only __all__, grouped by category).
+#
+# Left as global ignores, NOT individually reviewed line-by-line: TRY003
+# (3 files), PLR0913 (5 files: server.py + 4 tools/*.py), TID252 (7 files
+# under tools/). These are plausibly legitimate project-wide patterns (MCP
+# tool signatures mirroring the wire API for PLR0913, relative imports within
+# the package for TID252) but that has not been verified function-by-function
+# — e.g. some tools already use a bundled Pydantic input model (DnsRecordInput)
+# instead of many positional args, so PLR0913's breadth may be masking
+# inconsistent design rather than a uniform decision. Classified
+# accepted_bad_taste pending a fleet-wide ruff policy decision on whether
+# these three codes belong in every crunchtools MCP server's ignore list or
+# should be fixed per-callsite; this is a fleet-wide call, not a per-repo one,
+# so it is not stamped by_design here.
 [[exceptions]]
 check = "manifest_lint_suppression"
 path = "pyproject.toml"
-justification = "All ignore entries are project-wide style choices (not quality/correctness lints), each with an inline comment explaining the reason; see pyproject.toml comments"
-classification = "by_design"
+justification = "TRY003, PLR0913, and TID252 remain as global ignores without individual line-by-line review across every file they touch; real debt until a fleet-wide ruff policy decision resolves whether they are architecturally justified or should be fixed per-callsite. All other ignore entries were tightened to per-file-ignores scoped to their confirmed, reviewed violation sites."
+classification = "accepted_bad_taste"
