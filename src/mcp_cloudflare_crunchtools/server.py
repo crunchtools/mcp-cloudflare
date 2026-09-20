@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 # Create the FastMCP server
 mcp = FastMCP(
     name="mcp-cloudflare-crunchtools",
-    version="0.5.0",
+    version="0.5.1",
     instructions=(
         "Secure MCP server for Cloudflare DNS, Transform Rules,"
         " Page Rules, Cache, Analytics, and WAF"
