@@ -1,5 +1,7 @@
 """Mocked tool tests for all 25 Cloudflare tools."""
 
+import os
+
 import pytest
 
 from mcp_cloudflare_crunchtools.errors import (
@@ -95,9 +97,7 @@ def test_imports() -> None:
         assert callable(func)
 
 
-# =============================================================================
 # Error Hierarchy Tests
-# =============================================================================
 
 
 class TestErrorHierarchy:
@@ -157,8 +157,6 @@ class TestErrorMessages:
         assert "60" in str(error)
 
     def test_cloudflare_api_error_sanitizes_token(self) -> None:
-        import os
-
         os.environ["CLOUDFLARE_API_TOKEN"] = "secret_token_12345"
         error = CloudflareApiError(401, "Invalid token: secret_token_12345")
         assert "secret_token_12345" not in str(error)
@@ -170,8 +168,6 @@ class TestConfigSafety:
     """Tests for configuration security."""
 
     def test_config_repr_hides_token(self) -> None:
-        import os
-
         os.environ["CLOUDFLARE_API_TOKEN"] = "secret_test_token"
         try:
             from mcp_cloudflare_crunchtools.config import Config
@@ -184,8 +180,6 @@ class TestConfigSafety:
             del os.environ["CLOUDFLARE_API_TOKEN"]
 
     def test_config_requires_token(self) -> None:
-        import os
-
         from mcp_cloudflare_crunchtools.config import Config
 
         token = os.environ.pop("CLOUDFLARE_API_TOKEN", None)
@@ -200,9 +194,7 @@ class TestConfigSafety:
                 os.environ["CLOUDFLARE_API_TOKEN"] = token
 
 
-# =============================================================================
 # Mocked API Tests — Zone Tools
-# =============================================================================
 
 
 class TestZoneTools:
@@ -237,9 +229,7 @@ class TestZoneTools:
             assert result["zone"]["name"] == "example.com"
 
 
-# =============================================================================
 # Mocked API Tests — DNS Tools
-# =============================================================================
 
 
 class TestDnsTools:
@@ -331,9 +321,7 @@ class TestDnsTools:
             assert result.get("deleted") is True
 
 
-# =============================================================================
 # Mocked API Tests — Cache Tools
-# =============================================================================
 
 
 class TestCacheTools:
@@ -352,9 +340,7 @@ class TestCacheTools:
             assert result["success"] is True
 
 
-# =============================================================================
 # Mocked API Tests — Page Rules Tools
-# =============================================================================
 
 
 class TestPageRulesTools:
@@ -373,9 +359,7 @@ class TestPageRulesTools:
             assert "page_rules" in result
 
 
-# =============================================================================
 # Mocked API Tests — Analytics Tools
-# =============================================================================
 
 
 class TestAnalyticsTools:

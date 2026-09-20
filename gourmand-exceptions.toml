@@ -6,31 +6,76 @@
 check = "summary_litter"
 path = "CLAUDE.md"
 justification = "Claude Code project instructions for AI assistant orientation"
+classification = "by_design"
 
 # Primitive obsession — port 8000 is a standard default for HTTP servers
 [[exceptions]]
 check = "primitive_obsession"
 path = "src/mcp_cloudflare_crunchtools/__init__.py"
 justification = "Port 8000 is a standard default for HTTP servers"
+classification = "by_design"
 
 # Primitive obsession — HTTP status codes and timeout are standard API patterns
 [[exceptions]]
 check = "primitive_obsession"
 path = "src/mcp_cloudflare_crunchtools/client.py"
 justification = "HTTP status codes (401, 403, 404, 429) and timeout (30s) are standard well-known constants"
+classification = "by_design"
 
 # Primitive obsession — HTTP status code 200 and mock URL are standard test patterns
 [[exceptions]]
 check = "primitive_obsession"
 path = "tests/conftest.py"
 justification = "HTTP status code 200 and cf.example.com URL are standard test fixture patterns"
+classification = "by_design"
 
 [[exceptions]]
 check = "lint_suppression"
 path = "tests/test_validation.py"
 justification = "`# type: ignore[call-arg]` is the point of the test: it passes an argument the model forbids, to prove extra=\"forbid\" rejects it. Without the suppression the test cannot be written."
+classification = "by_design"
 
 [[exceptions]]
 check = "copy_paste_detection"
 path = "src/mcp_cloudflare_crunchtools/client.py"
 justification = "get_client and get_config are both the four-line lazy-singleton accessor. The duplication is the idiom; factoring it out behind a generic would cost more than it saves and obscures which global is being initialised."
+classification = "by_design"
+
+# Hidden env config — CLOUDFLARE_API_TOKEN is documented in CLAUDE.md's
+# Environment Variables table and in README.md's setup walkthrough. Not
+# adding it to allowed_names, per upstream guidance: this exception is the
+# confirmation that it is documented, not a silencing of the check.
+[[exceptions]]
+check = "hidden_env_config"
+path = "src/mcp_cloudflare_crunchtools/config.py"
+justification = "CLOUDFLARE_API_TOKEN is documented in CLAUDE.md's Environment Variables table and in README.md's setup instructions"
+classification = "by_design"
+
+[[exceptions]]
+check = "hidden_env_config"
+path = "src/mcp_cloudflare_crunchtools/errors.py"
+justification = "CLOUDFLARE_API_TOKEN is documented in CLAUDE.md's Environment Variables table; referenced here only to redact it from error messages"
+classification = "by_design"
+
+# Test-only: exercises token redaction and config error handling, not
+# user-facing configuration.
+[[exceptions]]
+check = "hidden_env_config"
+path = "tests/test_tools.py"
+justification = "CLOUDFLARE_API_TOKEN references here are test fixtures for token-redaction and config-loading tests, not user-facing configuration"
+classification = "by_design"
+
+# Manifest lint suppression — every ignore below is a project-wide style
+# choice (not a quality/correctness lint) with an inline comment stating the
+# reason: long exception messages, MCP tool signatures mirroring the wire
+# API's positional/keyword shape, HTTP status codes as literals, the
+# module-global singleton pattern, empty-class bodies, a deferred import in
+# server.py that avoids a circular import, relative imports within the
+# package, and __all__ grouped by category. S101 (assert) and S105
+# (hardcoded-password false positive on test fixtures) are tests-only
+# per-file-ignores since neither fires in src/.
+[[exceptions]]
+check = "manifest_lint_suppression"
+path = "pyproject.toml"
+justification = "All ignore entries are project-wide style choices (not quality/correctness lints), each with an inline comment explaining the reason; see pyproject.toml comments"
+classification = "by_design"

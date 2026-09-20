@@ -8,6 +8,8 @@ from typing import Any
 from ..client import get_client
 from ..models import validate_hex_id
 
+CLOUDFLARE_MAX_PER_PAGE = 50
+
 
 async def list_zones(
     name: str | None = None,
@@ -30,7 +32,7 @@ async def list_zones(
 
     params: dict[str, Any] = {
         "page": page,
-        "per_page": min(per_page, 50),
+        "per_page": min(per_page, CLOUDFLARE_MAX_PER_PAGE),
     }
 
     if name:
@@ -76,7 +78,6 @@ async def get_zone(
     if not zone_id:
         return {"error": "Either zone_id or zone_name must be provided"}
 
-    # Validate zone_id format
     zone_id = validate_hex_id(zone_id, "zone_id")
 
     response = await client.get(f"/zones/{zone_id}")
