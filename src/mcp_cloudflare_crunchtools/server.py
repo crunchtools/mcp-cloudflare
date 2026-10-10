@@ -9,18 +9,26 @@ from typing import Any
 from fastmcp import FastMCP
 
 from .tools import (
+    create_access_app,
+    create_access_policy,
     create_dns_record,
     create_page_rule,
     create_waf_rule,
+    delete_access_app,
+    delete_access_policy,
     delete_dns_record,
     delete_page_rule,
     delete_waf_rule,
+    get_access_app,
+    get_access_organization,
     get_dns_record,
     get_security_events,
     get_top_pages,
     get_traffic_by_country,
     get_zone,
     get_zone_analytics,
+    list_access_apps,
+    list_access_policies,
     list_dns_records,
     list_page_rules,
     list_request_header_rules,
@@ -46,10 +54,10 @@ READ_ONLY = {"readOnlyHint": True}
 # Create the FastMCP server
 mcp = FastMCP(
     name="mcp-cloudflare-crunchtools",
-    version="0.6.0",
+    version="0.7.0",
     instructions=(
         "Secure MCP server for Cloudflare DNS, Transform Rules,"
-        " Page Rules, Cache, Analytics, and WAF"
+        " Page Rules, Cache, Analytics, WAF, and Access"
     ),
 )
 
@@ -739,3 +747,155 @@ async def delete_waf_rule_tool(
     if not zone_id:
         return {"error": "Either zone_id or zone_name must be provided, or zone not found"}
     return await delete_waf_rule(zone_id=zone_id, rule_id=rule_id)
+
+
+# Register Access tools
+
+
+@mcp.tool(annotations=READ_ONLY)
+async def get_access_organization_tool(zone_id: str) -> dict[str, Any]:
+    """Get the Zero Trust organization behind a zone's Access applications.
+
+    Args:
+        zone_id: Zone ID (32-character hex string)
+
+    Returns:
+        The organization and its team login domain, or enabled=False when
+        Zero Trust has never been enabled on the account
+    """
+    return await get_access_organization(zone_id=zone_id)
+
+
+@mcp.tool(annotations=READ_ONLY)
+async def list_access_apps_tool(zone_id: str) -> dict[str, Any]:
+    """List the Access applications on a zone.
+
+    Args:
+        zone_id: Zone ID (32-character hex string)
+
+    Returns:
+        List of Access applications
+    """
+    return await list_access_apps(zone_id=zone_id)
+
+
+@mcp.tool(annotations=READ_ONLY)
+async def get_access_app_tool(zone_id: str, app_id: str) -> dict[str, Any]:
+    """Get one Access application, including its audience tag (aud).
+
+    Args:
+        zone_id: Zone ID (32-character hex string)
+        app_id: Application ID (UUID)
+
+    Returns:
+        Access application details
+    """
+    return await get_access_app(zone_id=zone_id, app_id=app_id)
+
+
+@mcp.tool()
+async def create_access_app_tool(
+    zone_id: str,
+    name: str,
+    domain: str,
+    session_duration: str = "24h",
+) -> dict[str, Any]:
+    """Put a hostname behind a Cloudflare Access login.
+
+    A new application has no policy and admits no one until
+    create_access_policy adds one.
+
+    Args:
+        zone_id: Zone ID (32-character hex string)
+        name: Display name
+        domain: Hostname to protect, optionally with a path. No scheme.
+        session_duration: How long a login lasts, such as 24h or 720h (default: 24h)
+
+    Returns:
+        Created application details
+    """
+    return await create_access_app(
+        zone_id=zone_id, name=name, domain=domain, session_duration=session_duration
+    )
+
+
+@mcp.tool()
+async def delete_access_app_tool(zone_id: str, app_id: str) -> dict[str, Any]:
+    """Delete an Access application, leaving its hostname with no Access login.
+
+    Args:
+        zone_id: Zone ID (32-character hex string)
+        app_id: Application ID (UUID)
+
+    Returns:
+        Deletion confirmation
+    """
+    return await delete_access_app(zone_id=zone_id, app_id=app_id)
+
+
+@mcp.tool(annotations=READ_ONLY)
+async def list_access_policies_tool(zone_id: str, app_id: str) -> dict[str, Any]:
+    """List the policies on an Access application.
+
+    Args:
+        zone_id: Zone ID (32-character hex string)
+        app_id: Application ID (UUID)
+
+    Returns:
+        List of policies in evaluation order
+    """
+    return await list_access_policies(zone_id=zone_id, app_id=app_id)
+
+
+@mcp.tool()
+async def create_access_policy_tool(
+    zone_id: str,
+    app_id: str,
+    name: str,
+    decision: str,
+    include: list[dict[str, Any]],
+    exclude: list[dict[str, Any]] | None = None,
+    require: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Add a policy to an Access application.
+
+    Each rule is an object with exactly one key:
+    {"email": "user@example.com"}, {"email_domain": "example.com"},
+    {"ip": "203.0.113.0/24"} or {"everyone": true}.
+
+    Args:
+        zone_id: Zone ID (32-character hex string)
+        app_id: Application ID (UUID)
+        name: Policy name
+        decision: allow, deny, bypass (no login at all) or non_identity
+        include: Rules of which a visitor must match at least one
+        exclude: Rules of which a visitor must match none (optional)
+        require: Rules of which a visitor must match all (optional)
+
+    Returns:
+        Created policy details
+    """
+    return await create_access_policy(
+        zone_id=zone_id,
+        app_id=app_id,
+        name=name,
+        decision=decision,
+        include=include,
+        exclude=exclude,
+        require=require,
+    )
+
+
+@mcp.tool()
+async def delete_access_policy_tool(zone_id: str, app_id: str, policy_id: str) -> dict[str, Any]:
+    """Delete a policy from an Access application.
+
+    Args:
+        zone_id: Zone ID (32-character hex string)
+        app_id: Application ID (UUID)
+        policy_id: Policy ID (UUID)
+
+    Returns:
+        Deletion confirmation
+    """
+    return await delete_access_policy(zone_id=zone_id, app_id=app_id, policy_id=policy_id)

@@ -57,6 +57,13 @@ This means your MCP server runs in a hardened environment with fewer vulnerabili
 - `update_page_rule` - Modify existing rules
 - `delete_page_rule` - Remove rules
 
+### Access (8 tools)
+- `get_access_organization` - The Zero Trust organization and its team login domain
+- `list_access_apps` / `get_access_app` - Applications on a zone, with their audience tags
+- `create_access_app` / `delete_access_app` - Put a hostname behind an Access login, or take it out
+- `list_access_policies` - Who an application admits
+- `create_access_policy` / `delete_access_policy` - Allow, deny or bypass by email, email domain, IP or everyone
+
 ### Cache Management (1 tool)
 - `purge_cache` - Purge by URL, tag, host, prefix, or everything
 
@@ -109,6 +116,8 @@ podman run -e CLOUDFLARE_API_TOKEN=your_token \
    | Zone | Page Rules | Edit |
    | Zone | Transform Rules | Edit |
    | Zone | Cache Purge | Purge |
+   | Account | Access: Apps and Policies | Edit |
+   | Account | Access: Organizations, Identity Providers, and Groups | Read |
 
 4. **Configure Zone Resources**
    - First dropdown: Select "Include"

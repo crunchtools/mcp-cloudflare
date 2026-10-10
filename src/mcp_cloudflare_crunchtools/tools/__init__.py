@@ -3,6 +3,16 @@
 This package contains all the MCP tool implementations for Cloudflare operations.
 """
 
+from .access import (
+    create_access_app,
+    create_access_policy,
+    delete_access_app,
+    delete_access_policy,
+    get_access_app,
+    get_access_organization,
+    list_access_apps,
+    list_access_policies,
+)
 from .analytics import (
     get_security_events,
     get_top_pages,
@@ -73,4 +83,13 @@ __all__ = [
     "create_waf_rule",
     "update_waf_rule",
     "delete_waf_rule",
+    # Access
+    "get_access_organization",
+    "list_access_apps",
+    "get_access_app",
+    "create_access_app",
+    "delete_access_app",
+    "list_access_policies",
+    "create_access_policy",
+    "delete_access_policy",
 ]

@@ -1,8 +1,8 @@
 # mcp-cloudflare-crunchtools Constitution
 
-> **Version:** 1.1.0
+> **Version:** 1.2.0
 > **Ratified:** 2026-03-03
-> **Amended:** 2026-10-02
+> **Amended:** 2026-10-10
 > **Status:** Active
 > **Inherits:** [crunchtools/constitution](https://github.com/crunchtools/constitution) v1.22.0
 > **Profile:** MCP Server
@@ -32,8 +32,9 @@ rules out SSRF through configuration.
 
 ## Tool Groups
 
-`tools/` holds zones, DNS, transform rules, page rules, WAF, cache and
-analytics. `test_tool_count` is updated whenever a tool is added or removed.
+`tools/` holds zones, DNS, transform rules, page rules, WAF, cache,
+analytics and Access. Access applications and policies carry UUIDs, validated
+by `validate_uuid`, and policy rules go through `AccessRule`. `test_tool_count` is updated whenever a tool is added or removed.
 
 ## Instance
 
@@ -53,3 +54,4 @@ analytics. `test_tool_count` is updated whenever a tool is added or removed.
 | 1.0.1 | 2026-03-16 | Add Section VI (Container Conventions); renumber VI-VIII to VII-IX |
 | 1.0.2 | 2026-09-25 | Inherit constitution v1.17.0 (Gatehouse gates) |
 | 1.1.0 | 2026-10-02 | Manifest under constitution v1.18.0: profile restatement removed, mcp-cloudflare specifics kept |
+| 1.2.0 | 2026-10-10 | Access tool group added |

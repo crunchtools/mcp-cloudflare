@@ -53,7 +53,5 @@ async def _patch_cf_client(
     else:
         mock_method.return_value = _mock_cf_response()
 
-    with patch.dict(os.environ, env, clear=True), patch(
-        "httpx.AsyncClient.request", mock_method
-    ):
+    with patch.dict(os.environ, env, clear=True), patch("httpx.AsyncClient.request", mock_method):
         yield mock_method

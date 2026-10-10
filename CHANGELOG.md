@@ -8,6 +8,26 @@ Entries prior to 2026-09-19 are back-filled from GitHub Release notes (RT #1484)
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-10
+
+### Added
+
+- Cloudflare Access tools, for putting a hostname behind a Zero Trust login:
+  `get_access_organization`, `list_access_apps`, `get_access_app`,
+  `create_access_app`, `delete_access_app`, `list_access_policies`,
+  `create_access_policy` and `delete_access_policy`. Access belongs to the
+  account, so each tool takes a zone ID like every other tool and looks up the
+  account that owns it; no account ID goes in the configuration. Applications
+  are always `self_hosted`. `list_access_apps` follows pages.
+- Policy rules are limited to `email`, `email_domain`, `ip` and `everyone`, and
+  are validated before any request is made, along with the application's
+  hostname and session duration. Application and policy IDs are validated as
+  UUIDs.
+- A token refused by an Access endpoint is told which scope it lacks:
+  `Account > Access: Apps and Policies (Edit)`, or
+  `Account > Access: Organizations, Identity Providers, and Groups (Read)` for
+  `get_access_organization`.
+
 ## [0.6.0] - 2026-10-10
 
 ### Added

@@ -4,16 +4,30 @@ All tool inputs are validated through these models to prevent injection attacks
 and ensure data integrity before making API calls.
 """
 
+import ipaddress
 import re
+import uuid
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 # Valid DNS record types - intentionally restrictive
 DNS_RECORD_TYPES = frozenset({"A", "AAAA", "CNAME", "MX", "TXT", "NS", "SRV", "CAA", "PTR"})
 
 # Cloudflare identifies zones, DNS records and rules with the same 32-hex form.
 HEX_ID_PATTERN = re.compile(r"^[a-f0-9]{32}$")
+
+# An Access session lifetime: one or more number+unit pairs, such as 24h or 2h45m.
+SESSION_DURATION_PATTERN = re.compile(r"^(\d{1,6}(ms|s|m|h))+$")
+
+# What an Access application protects: a hostname, optionally with a path. No scheme.
+ACCESS_DOMAIN_PATTERN = re.compile(
+    r"^(\*\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+(/[\w\-./*]*)?$"
+)
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+EMAIL_DOMAIN_PATTERN = re.compile(
+    r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$"
+)
 
 # Cloudflare API field limits.
 MAX_RECORD_NAME = 255
@@ -29,12 +43,27 @@ MAX_PAGE_RULE_ACTIONS = 20
 MAX_PAGE_RULE_TARGETS = 10
 MAX_PAGE_RULE_PRIORITY = 1000
 MAX_PURGE_ITEMS = 30
+MAX_ACCESS_NAME = 255
+MAX_ACCESS_DOMAIN = 255
+MAX_ACCESS_RULES = 50
+MAX_EMAIL = 320
 
 
 def validate_hex_id(value: str, field_name: str) -> str:
     """Validate an identifier is a 32-character hex string."""
     if not HEX_ID_PATTERN.match(value):
         raise ValueError(f"{field_name} must be 32-character hex string")
+    return value
+
+
+def validate_uuid(value: str, field_name: str) -> str:
+    """Validate an identifier is a UUID in the canonical lower-case, hyphenated form."""
+    try:
+        canonical: str | None = str(uuid.UUID(value))
+    except ValueError:
+        canonical = None
+    if canonical != value:
+        raise ValueError(f"{field_name} must be a UUID")
     return value
 
 
@@ -225,4 +254,106 @@ class CachePurgeInput(BaseModel):
     )
     prefixes: list[str] | None = Field(
         default=None, max_length=MAX_PURGE_ITEMS, description="URL prefixes to purge"
+    )
+
+
+class AccessRule(BaseModel):
+    """One Access policy rule: exactly one way of matching a visitor."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    email: str | None = Field(default=None, max_length=MAX_EMAIL, description="One address")
+    email_domain: str | None = Field(
+        default=None, max_length=MAX_ACCESS_DOMAIN, description="Every address at a domain"
+    )
+    ip: str | None = Field(default=None, description="An IP address or CIDR range")
+    everyone: bool | None = Field(default=None, description="True matches every visitor")
+
+    @field_validator("email")
+    @classmethod
+    def check_email(cls, v: str | None) -> str | None:
+        if v is not None and not EMAIL_PATTERN.match(v):
+            raise ValueError("email must be an address like user@example.com")
+        return v
+
+    @field_validator("email_domain")
+    @classmethod
+    def check_email_domain(cls, v: str | None) -> str | None:
+        if v is not None and not EMAIL_DOMAIN_PATTERN.match(v):
+            raise ValueError("email_domain must be a domain like example.com")
+        return v
+
+    @field_validator("ip")
+    @classmethod
+    def check_ip(cls, v: str | None) -> str | None:
+        if v is not None:
+            ipaddress.ip_network(v, strict=False)
+        return v
+
+    @model_validator(mode="after")
+    def exactly_one_matcher(self) -> "AccessRule":
+        given = [
+            self.email is not None,
+            self.email_domain is not None,
+            self.ip is not None,
+            self.everyone is True,
+        ]
+        if sum(given) != 1:
+            raise ValueError("a rule needs exactly one of email, email_domain, ip, everyone=true")
+        return self
+
+    def to_api(self) -> dict[str, Any]:
+        """The nested shape the Cloudflare API takes for this rule."""
+        if self.email is not None:
+            return {"email": {"email": self.email}}
+        if self.email_domain is not None:
+            return {"email_domain": {"domain": self.email_domain}}
+        if self.ip is not None:
+            return {"ip": {"ip": self.ip}}
+        return {"everyone": {}}
+
+
+class AccessAppInput(BaseModel):
+    """A self-hosted Access application."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(..., min_length=1, max_length=MAX_ACCESS_NAME, description="Display name")
+    domain: str = Field(
+        ..., max_length=MAX_ACCESS_DOMAIN, description="Hostname, optionally with a path"
+    )
+    session_duration: str = Field(default="24h", description="Session lifetime, such as 24h")
+
+    @field_validator("domain")
+    @classmethod
+    def check_domain(cls, v: str) -> str:
+        if not ACCESS_DOMAIN_PATTERN.match(v):
+            raise ValueError("domain must be a hostname with an optional path and no scheme")
+        return v
+
+    @field_validator("session_duration")
+    @classmethod
+    def check_session_duration(cls, v: str) -> str:
+        if not SESSION_DURATION_PATTERN.match(v):
+            raise ValueError("session_duration must look like 30m, 24h or 2h45m")
+        return v
+
+
+class AccessPolicyInput(BaseModel):
+    """An Access policy on one application."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(..., min_length=1, max_length=MAX_ACCESS_NAME, description="Policy name")
+    decision: Literal["allow", "deny", "bypass", "non_identity"] = Field(
+        ..., description="What Access does with a visitor who matches"
+    )
+    include: list[AccessRule] = Field(
+        ..., min_length=1, max_length=MAX_ACCESS_RULES, description="Match any of these"
+    )
+    exclude: list[AccessRule] = Field(
+        default_factory=list, max_length=MAX_ACCESS_RULES, description="Match none of these"
+    )
+    require: list[AccessRule] = Field(
+        default_factory=list, max_length=MAX_ACCESS_RULES, description="Match all of these"
     )
