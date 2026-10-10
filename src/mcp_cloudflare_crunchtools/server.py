@@ -39,10 +39,14 @@ from .tools import (
 
 logger = logging.getLogger(__name__)
 
+# A gateway drops an invalid optional argument only on a tool annotated read-only;
+# on anything else it refuses the call. Only tools that change nothing in Cloudflare get this.
+READ_ONLY = {"readOnlyHint": True}
+
 # Create the FastMCP server
 mcp = FastMCP(
     name="mcp-cloudflare-crunchtools",
-    version="0.5.1",
+    version="0.6.0",
     instructions=(
         "Secure MCP server for Cloudflare DNS, Transform Rules,"
         " Page Rules, Cache, Analytics, and WAF"
@@ -53,7 +57,7 @@ mcp = FastMCP(
 # Register Zone tools
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 async def list_zones_tool(
     name: str | None = None,
     status: str | None = None,
@@ -74,7 +78,7 @@ async def list_zones_tool(
     return await list_zones(name=name, status=status, page=page, per_page=per_page)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 async def get_zone_tool(
     zone_id: str | None = None,
     zone_name: str | None = None,
@@ -96,7 +100,7 @@ async def get_zone_tool(
 # Register DNS tools
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 async def list_dns_records_tool(
     zone_id: str,
     type: str | None = None,
@@ -123,7 +127,7 @@ async def list_dns_records_tool(
     )
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 async def get_dns_record_tool(
     zone_id: str,
     record_id: str,
@@ -239,7 +243,7 @@ async def delete_dns_record_tool(
 # Register Transform Rules tools
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 async def list_request_header_rules_tool(zone_id: str) -> dict[str, Any]:
     """List request header modification rules.
 
@@ -275,7 +279,7 @@ async def set_request_header_rules_tool(
     return await set_request_header_rules(zone_id=zone_id, rules=rules)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 async def list_response_header_rules_tool(zone_id: str) -> dict[str, Any]:
     """List response header modification rules.
 
@@ -311,7 +315,7 @@ async def set_response_header_rules_tool(
     return await set_response_header_rules(zone_id=zone_id, rules=rules)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 async def list_url_rewrite_rules_tool(zone_id: str) -> dict[str, Any]:
     """List URL rewrite rules.
 
@@ -350,7 +354,7 @@ async def set_url_rewrite_rules_tool(
 # Register Page Rules tools
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 async def list_page_rules_tool(
     zone_id: str,
     status: str | None = None,
@@ -484,9 +488,7 @@ async def purge_cache_tool(
 # Register Analytics tools
 
 
-async def _resolve_zone_id(
-    zone_id: str | None, zone_name: str | None
-) -> str | None:
+async def _resolve_zone_id(zone_id: str | None, zone_name: str | None) -> str | None:
     """Resolve zone_name to zone_id if needed."""
     if zone_name and not zone_id:
         from .tools.zones import list_zones
@@ -499,7 +501,7 @@ async def _resolve_zone_id(
     return zone_id
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 async def get_zone_analytics_tool(
     zone_id: str | None = None,
     zone_name: str | None = None,
@@ -528,7 +530,7 @@ async def get_zone_analytics_tool(
     return await get_zone_analytics(zone_id=zone_id, since=since, until=until)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 async def get_top_pages_tool(
     zone_id: str | None = None,
     zone_name: str | None = None,
@@ -556,7 +558,7 @@ async def get_top_pages_tool(
     return await get_top_pages(zone_id=zone_id, since=since, until=until, limit=limit)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 async def get_traffic_by_country_tool(
     zone_id: str | None = None,
     zone_name: str | None = None,
@@ -584,7 +586,7 @@ async def get_traffic_by_country_tool(
     return await get_traffic_by_country(zone_id=zone_id, since=since, until=until, limit=limit)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 async def get_security_events_tool(
     zone_id: str | None = None,
     zone_name: str | None = None,
@@ -615,7 +617,7 @@ async def get_security_events_tool(
 # Register WAF tools
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 async def list_waf_rules_tool(
     zone_id: str | None = None,
     zone_name: str | None = None,
