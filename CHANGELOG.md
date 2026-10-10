@@ -8,6 +8,15 @@ Entries prior to 2026-09-19 are back-filled from GitHub Release notes (RT #1484)
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-10-10
+
+### Fixed
+
+- A 403 from Cloudflare was always reported as a token missing a scope. Only
+  code 10000 means that. Any other 403 now carries Cloudflare's own message, so
+  an account where Zero Trust was never set up says "Access is not enabled"
+  instead of naming a permission the token already has.
+
 ## [0.7.0] - 2026-10-10
 
 ### Added
