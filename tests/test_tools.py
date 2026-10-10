@@ -1,4 +1,4 @@
-"""Mocked tool tests for all 25 Cloudflare tools."""
+"""Mocked tool tests for the Cloudflare tools."""
 
 import os
 from typing import Any
@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock
 
 import httpx
 import pytest
+from pydantic import ValidationError as PydanticValidationError
 
 from mcp_cloudflare_crunchtools.errors import (
     CloudflareApiError,
@@ -22,18 +23,26 @@ from mcp_cloudflare_crunchtools.errors import (
 from mcp_cloudflare_crunchtools.server import mcp
 from mcp_cloudflare_crunchtools.tools import __all__ as tools_all
 from mcp_cloudflare_crunchtools.tools import (
+    create_access_app,
+    create_access_policy,
     create_dns_record,
     create_page_rule,
     create_waf_rule,
+    delete_access_app,
+    delete_access_policy,
     delete_dns_record,
     delete_page_rule,
     delete_waf_rule,
+    get_access_app,
+    get_access_organization,
     get_dns_record,
     get_security_events,
     get_top_pages,
     get_traffic_by_country,
     get_zone,
     get_zone_analytics,
+    list_access_apps,
+    list_access_policies,
     list_dns_records,
     list_page_rules,
     list_request_header_rules,
@@ -78,13 +87,25 @@ TOOL_FUNCTIONS = [
     create_waf_rule,
     update_waf_rule,
     delete_waf_rule,
+    get_access_organization,
+    list_access_apps,
+    get_access_app,
+    create_access_app,
+    delete_access_app,
+    list_access_policies,
+    create_access_policy,
+    delete_access_policy,
 ]
 
-EXPECTED_TOOL_COUNT = 26
-EXPECTED_ALL_COUNT = 26
+EXPECTED_TOOL_COUNT = 34
+EXPECTED_ALL_COUNT = 34
 
 ZONE_ID = "a" * 32
 RECORD_ID = "b" * 32
+APP_ID = "11111111-2222-3333-4444-555555555555"
+POLICY_ID = "66666666-7777-8888-9999-aaaaaaaaaaaa"
+ACCOUNT_ID = "d" * 32
+ACCESS = f"/accounts/{ACCOUNT_ID}/access"
 
 
 def test_tool_count() -> None:
@@ -118,6 +139,10 @@ READ_ONLY = frozenset(
         "get_top_pages_tool",
         "get_traffic_by_country_tool",
         "get_security_events_tool",
+        "get_access_organization_tool",
+        "list_access_apps_tool",
+        "get_access_app_tool",
+        "list_access_policies_tool",
     }
 )
 WRITES = frozenset(
@@ -135,6 +160,10 @@ WRITES = frozenset(
         "create_waf_rule_tool",
         "update_waf_rule_tool",
         "delete_waf_rule_tool",
+        "create_access_app_tool",
+        "delete_access_app_tool",
+        "create_access_policy_tool",
+        "delete_access_policy_tool",
     }
 )
 
@@ -168,6 +197,10 @@ READ_ONLY_CALLS: dict[str, dict[str, Any]] = {
     "get_top_pages_tool": {"zone_name": "example.com"},
     "get_traffic_by_country_tool": {"zone_name": "example.com"},
     "get_security_events_tool": {"zone_name": "example.com"},
+    "get_access_organization_tool": {"zone_id": ZONE_ID},
+    "list_access_apps_tool": {"zone_id": ZONE_ID},
+    "get_access_app_tool": {"zone_id": ZONE_ID, "app_id": APP_ID},
+    "list_access_policies_tool": {"zone_id": ZONE_ID, "app_id": APP_ID},
 }
 
 # One ruleset per phase the read tools look for, so each follows through to the
@@ -186,6 +219,8 @@ _COLLECTIONS: dict[str, list[dict[str, Any]]] = {
     "/rulesets": _RULESETS,
     "/dns_records": [{"id": RECORD_ID}],
     "/pagerules": [{"id": RECORD_ID}],
+    "/access/apps": [{"id": APP_ID}],
+    "/policies": [{"id": POLICY_ID}],
 }
 
 
@@ -196,7 +231,12 @@ def _cloudflare_reply(*, url: str, **_: Any) -> httpx.Response:
     for suffix, items in _COLLECTIONS.items():
         if url.endswith(suffix):
             return _mock_cf_response(json_data={"success": True, "result": items})
-    return _mock_cf_response(json_data={"success": True, "result": {"id": RULESET_ID, "rules": []}})
+    return _mock_cf_response(
+        json_data={
+            "success": True,
+            "result": {"id": RULESET_ID, "rules": [], "account": {"id": ACCOUNT_ID}},
+        }
+    )
 
 
 class TestReadOnlyAnnotation:
@@ -500,6 +540,226 @@ class TestPageRulesTools:
         async with _patch_cf_client(response=resp):
             result = await list_page_rules(zone_id=ZONE_ID)
             assert "page_rules" in result
+
+
+# Mocked API Tests — Access Tools
+
+
+def _access_reply(result: Any = None, status_code: int = 200, **extra: Any) -> Any:
+    """Answer the zone lookup with its account, and every Access call with `result`."""
+
+    def reply(*, url: str, **_: Any) -> httpx.Response:
+        if url == f"/zones/{ZONE_ID}":
+            return _mock_cf_response(
+                json_data={"success": True, "result": {"account": {"id": ACCOUNT_ID}}}
+            )
+        return _mock_cf_response(
+            status_code=status_code,
+            json_data={"success": status_code == 200, "result": result, **extra},
+        )
+
+    return reply
+
+
+FORBIDDEN = {"status_code": 403, "errors": [{"code": 10000, "message": "Authentication"}]}
+
+
+class TestAccessTools:
+    """Tests for Access application and policy tools."""
+
+    @pytest.mark.asyncio
+    async def test_get_access_organization(self) -> None:
+        async with _patch_cf_client() as request:
+            request.side_effect = _access_reply({"auth_domain": "team.cloudflareaccess.com"})
+            result = await get_access_organization(zone_id=ZONE_ID)
+        assert result["enabled"] is True
+        assert result["organization"]["auth_domain"] == "team.cloudflareaccess.com"
+        assert request.await_args.kwargs["url"] == f"{ACCESS}/organizations"
+
+    @pytest.mark.asyncio
+    async def test_organization_absent_means_zero_trust_is_off(self) -> None:
+        async with _patch_cf_client() as request:
+            request.side_effect = _access_reply(
+                status_code=404, errors=[{"code": 12130, "message": "not_found"}]
+            )
+            result = await get_access_organization(zone_id=ZONE_ID)
+        assert result["enabled"] is False
+        assert result["organization"] is None
+
+    @pytest.mark.asyncio
+    async def test_get_access_app(self) -> None:
+        async with _patch_cf_client() as request:
+            request.side_effect = _access_reply({"id": APP_ID, "aud": "tag"})
+            result = await get_access_app(zone_id=ZONE_ID, app_id=APP_ID)
+        assert result["app"]["aud"] == "tag"
+        assert request.await_args.kwargs["url"] == f"{ACCESS}/apps/{APP_ID}"
+
+    @pytest.mark.asyncio
+    async def test_list_access_apps_follows_pages(self) -> None:
+        def page(number: int, name: str) -> httpx.Response:
+            return _mock_cf_response(
+                json_data={
+                    "success": True,
+                    "result": [{"id": name}],
+                    "result_info": {"page": number, "total_pages": 2},
+                }
+            )
+
+        async with _patch_cf_client() as request:
+            request.side_effect = [
+                _access_reply()(url=f"/zones/{ZONE_ID}"),
+                page(1, "one"),
+                page(2, "two"),
+            ]
+            result = await list_access_apps(zone_id=ZONE_ID)
+        assert [call.kwargs["params"]["page"] for call in request.await_args_list[1:]] == [1, 2]
+        assert result == {"apps": [{"id": "one"}, {"id": "two"}], "complete": True}
+
+    @pytest.mark.asyncio
+    async def test_list_access_apps_says_when_it_stopped_short(self) -> None:
+        async with _patch_cf_client() as request:
+            request.side_effect = _access_reply([{"id": APP_ID}], result_info={"total_pages": 99})
+            result = await list_access_apps(zone_id=ZONE_ID)
+        assert result["complete"] is False
+        assert len(result["apps"]) == 20
+
+    @pytest.mark.asyncio
+    async def test_create_access_app_is_self_hosted(self) -> None:
+        async with _patch_cf_client() as request:
+            request.side_effect = _access_reply({"id": APP_ID, "aud": "x"})
+            result = await create_access_app(
+                zone_id=ZONE_ID, name="Dev", domain="dev.example.com", session_duration="720h"
+            )
+        assert result["app"]["id"] == APP_ID
+        sent = request.await_args.kwargs
+        assert (sent["method"], sent["url"]) == ("POST", f"{ACCESS}/apps")
+        assert sent["json"] == {
+            "type": "self_hosted",
+            "name": "Dev",
+            "domain": "dev.example.com",
+            "session_duration": "720h",
+            "app_launcher_visible": False,
+        }
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "fields",
+        [
+            {"domain": "https://dev.example.com"},
+            {"domain": "dev.example.com/a b"},
+            {"session_duration": "a month"},
+            {"name": ""},
+        ],
+    )
+    async def test_create_access_app_rejects_bad_input_before_any_request(
+        self, fields: dict[str, str]
+    ) -> None:
+        good = {"name": "Dev", "domain": "dev.example.com", "session_duration": "24h"}
+        async with _patch_cf_client() as request:
+            with pytest.raises(PydanticValidationError):
+                await create_access_app(zone_id=ZONE_ID, **{**good, **fields})
+        request.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_create_access_policy_sends_cloudflares_rule_shape(self) -> None:
+        async with _patch_cf_client() as request:
+            request.side_effect = _access_reply({"id": POLICY_ID})
+            result = await create_access_policy(
+                zone_id=ZONE_ID,
+                app_id=APP_ID,
+                name="Owner",
+                decision="allow",
+                include=[{"email": "owner@example.com"}, {"email_domain": "example.com"}],
+                exclude=[{"ip": "203.0.113.0/24"}],
+            )
+        assert result["policy"]["id"] == POLICY_ID
+        sent = request.await_args.kwargs
+        assert sent["url"] == f"{ACCESS}/apps/{APP_ID}/policies"
+        assert sent["json"] == {
+            "name": "Owner",
+            "decision": "allow",
+            "include": [
+                {"email": {"email": "owner@example.com"}},
+                {"email_domain": {"domain": "example.com"}},
+            ],
+            "exclude": [{"ip": {"ip": "203.0.113.0/24"}}],
+            "require": [],
+        }
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("decision", "include"),
+        [
+            ("permit", [{"email": "owner@example.com"}]),
+            ("allow", []),
+            ("allow", [{"email": "not-an-address"}]),
+            ("allow", [{"email_domain": "https://example.com"}]),
+            ("allow", [{"email_domain": "localhost"}]),
+            ("allow", [{"email": "a@example.com", "everyone": True}]),
+            ("allow", [{"everyone": False}]),
+            ("allow", [{"group": "admins"}]),
+            ("allow", [{"ip": "not-an-ip"}]),
+        ],
+    )
+    async def test_create_access_policy_rejects_bad_input_before_any_request(
+        self, decision: str, include: list[dict[str, Any]]
+    ) -> None:
+        async with _patch_cf_client() as request:
+            with pytest.raises(PydanticValidationError):
+                await create_access_policy(
+                    zone_id=ZONE_ID, app_id=APP_ID, name="P", decision=decision, include=include
+                )
+        request.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_everyone_rule(self) -> None:
+        async with _patch_cf_client() as request:
+            request.side_effect = _access_reply({"id": POLICY_ID})
+            await create_access_policy(
+                zone_id=ZONE_ID,
+                app_id=APP_ID,
+                name="Public",
+                decision="bypass",
+                include=[{"everyone": True}],
+            )
+        assert request.await_args.kwargs["json"]["include"] == [{"everyone": {}}]
+
+    @pytest.mark.asyncio
+    async def test_list_access_policies(self) -> None:
+        async with _patch_cf_client() as request:
+            request.side_effect = _access_reply([{"id": POLICY_ID}])
+            result = await list_access_policies(zone_id=ZONE_ID, app_id=APP_ID)
+        assert result == {"policies": [{"id": POLICY_ID}]}
+
+    @pytest.mark.asyncio
+    async def test_delete_access_app_and_policy(self) -> None:
+        async with _patch_cf_client() as request:
+            request.side_effect = _access_reply({})
+            app = await delete_access_app(zone_id=ZONE_ID, app_id=APP_ID)
+            policy = await delete_access_policy(zone_id=ZONE_ID, app_id=APP_ID, policy_id=POLICY_ID)
+        assert app == {"deleted": True, "id": APP_ID}
+        assert policy == {"deleted": True, "id": POLICY_ID}
+        sent = [(call.kwargs["method"], call.kwargs["url"]) for call in request.await_args_list]
+        assert ("DELETE", f"{ACCESS}/apps/{APP_ID}") in sent
+        assert ("DELETE", f"{ACCESS}/apps/{APP_ID}/policies/{POLICY_ID}") in sent
+
+    @pytest.mark.asyncio
+    async def test_non_uuid_ids_never_reach_the_api(self) -> None:
+        async with _patch_cf_client() as request:
+            with pytest.raises(ValueError, match="app_id must be a UUID"):
+                await get_access_app(zone_id=ZONE_ID, app_id="../../zones")
+            with pytest.raises(ValueError, match="policy_id must be a UUID"):
+                await delete_access_policy(zone_id=ZONE_ID, app_id=APP_ID, policy_id=ZONE_ID)
+        request.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_refused_token_names_the_access_scope(self) -> None:
+        async with _patch_cf_client() as request:
+            request.side_effect = _access_reply(**FORBIDDEN)
+            with pytest.raises(PermissionDeniedError, match="Access: Apps and Policies"):
+                await list_access_apps(zone_id=ZONE_ID)
+            with pytest.raises(PermissionDeniedError, match="Access: Organizations"):
+                await get_access_organization(zone_id=ZONE_ID)
 
 
 # Mocked API Tests — Analytics Tools

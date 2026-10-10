@@ -74,6 +74,8 @@ claude mcp add mcp-cloudflare-crunchtools \
    | Zone | Page Rules | Edit |
    | Zone | Transform Rules | Edit |
    | Zone | Cache Purge | Purge |
+   | Account | Access: Apps and Policies | Edit |
+   | Account | Access: Organizations, Identity Providers, and Groups | Read |
 
    **To add each permission:**
    1. Click "+ Add more" under Permissions

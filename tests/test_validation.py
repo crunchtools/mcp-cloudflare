@@ -4,10 +4,12 @@ import pytest
 from pydantic import ValidationError
 
 from mcp_cloudflare_crunchtools.models import (
+    AccessRule,
     DnsRecordInput,
     DnsRecordUpdateInput,
     ZoneInput,
     validate_hex_id,
+    validate_uuid,
 )
 
 
@@ -206,3 +208,44 @@ class TestDnsRecordUpdateInput:
         update = DnsRecordUpdateInput()
         assert update.type is None
         assert update.content is None
+
+
+class TestUuidValidation:
+    """Access applications and policies are identified by UUIDs."""
+
+    def test_valid_uuid(self) -> None:
+        value = "11111111-2222-3333-4444-555555555555"
+        assert validate_uuid(value, "app_id") == value
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "a" * 32,
+            "11111111-2222-3333-4444-55555555555",
+            "11111111-2222-3333-4444-55555555555G",
+            "",
+        ],
+    )
+    def test_invalid_uuid(self, value: str) -> None:
+        with pytest.raises(ValueError, match="app_id must be a UUID"):
+            validate_uuid(value, "app_id")
+
+
+class TestAccessRule:
+    """A policy rule names exactly one way of matching a visitor."""
+
+    def test_api_shapes(self) -> None:
+        assert AccessRule(email="a@example.com").to_api() == {"email": {"email": "a@example.com"}}
+        assert AccessRule(email_domain="example.com").to_api() == {
+            "email_domain": {"domain": "example.com"}
+        }
+        assert AccessRule(ip="2001:db8::/32").to_api() == {"ip": {"ip": "2001:db8::/32"}}
+        assert AccessRule(everyone=True).to_api() == {"everyone": {}}
+
+    def test_no_matcher_is_rejected(self) -> None:
+        with pytest.raises(ValidationError, match="exactly one of"):
+            AccessRule()
+
+    def test_two_matchers_are_rejected(self) -> None:
+        with pytest.raises(ValidationError, match="exactly one of"):
+            AccessRule(email="a@example.com", email_domain="example.com")
