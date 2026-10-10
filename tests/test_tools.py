@@ -753,6 +753,17 @@ class TestAccessTools:
         request.assert_not_awaited()
 
     @pytest.mark.asyncio
+    async def test_access_not_enabled_is_reported_in_cloudflares_words(self) -> None:
+        """A 403 that is not a refused token must not be dressed up as a missing scope."""
+        not_enabled = "access.api.error.not_enabled: Access is not enabled."
+        async with _patch_cf_client() as request:
+            request.side_effect = _access_reply(
+                status_code=403, errors=[{"code": 9999, "message": not_enabled}]
+            )
+            with pytest.raises(CloudflareApiError, match="Access is not enabled"):
+                await list_access_apps(zone_id=ZONE_ID)
+
+    @pytest.mark.asyncio
     async def test_refused_token_names_the_access_scope(self) -> None:
         async with _patch_cf_client() as request:
             request.side_effect = _access_reply(**FORBIDDEN)

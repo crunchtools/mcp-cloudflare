@@ -26,6 +26,10 @@ MAX_RESPONSE_SIZE = 10 * 1024 * 1024
 REQUEST_TIMEOUT = 30.0
 
 
+# The error code Cloudflare gives a token that is valid but not allowed to do this.
+TOKEN_REFUSED_CODE = 10000
+
+
 class CloudflareClient:
     """Async HTTP client for Cloudflare API.
 
@@ -135,7 +139,10 @@ class CloudflareClient:
         # Handle specific status codes
         if status_code == 401:
             raise PermissionDeniedError("Valid API token")
-        if status_code == 403:
+        # Cloudflare refuses a token that lacks a scope with code 10000. Any other
+        # 403 says something specific, such as Access not being enabled on the
+        # account, and falls through to carry Cloudflare's own message.
+        if status_code == 403 and error_code == TOKEN_REFUSED_CODE:
             raise PermissionDeniedError("Required permission scope")
         if status_code == 404:
             raise ZoneNotFoundError(error_msg)

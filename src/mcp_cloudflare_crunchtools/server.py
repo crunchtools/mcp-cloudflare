@@ -54,7 +54,7 @@ READ_ONLY = {"readOnlyHint": True}
 # Create the FastMCP server
 mcp = FastMCP(
     name="mcp-cloudflare-crunchtools",
-    version="0.7.0",
+    version="0.7.1",
     instructions=(
         "Secure MCP server for Cloudflare DNS, Transform Rules,"
         " Page Rules, Cache, Analytics, WAF, and Access"
