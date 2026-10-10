@@ -1,7 +1,10 @@
 """Mocked tool tests for all 25 Cloudflare tools."""
 
 import os
+from typing import Any
+from unittest.mock import AsyncMock
 
+import httpx
 import pytest
 
 from mcp_cloudflare_crunchtools.errors import (
@@ -16,6 +19,7 @@ from mcp_cloudflare_crunchtools.errors import (
     ValidationError,
     ZoneNotFoundError,
 )
+from mcp_cloudflare_crunchtools.server import mcp
 from mcp_cloudflare_crunchtools.tools import __all__ as tools_all
 from mcp_cloudflare_crunchtools.tools import (
     create_dns_record,
@@ -95,6 +99,145 @@ def test_imports() -> None:
     )
     for func in TOOL_FUNCTIONS:
         assert callable(func)
+
+
+# Read-only classification
+
+READ_ONLY = frozenset(
+    {
+        "list_zones_tool",
+        "get_zone_tool",
+        "list_dns_records_tool",
+        "get_dns_record_tool",
+        "list_request_header_rules_tool",
+        "list_response_header_rules_tool",
+        "list_url_rewrite_rules_tool",
+        "list_page_rules_tool",
+        "list_waf_rules_tool",
+        "get_zone_analytics_tool",
+        "get_top_pages_tool",
+        "get_traffic_by_country_tool",
+        "get_security_events_tool",
+    }
+)
+WRITES = frozenset(
+    {
+        "create_dns_record_tool",
+        "update_dns_record_tool",
+        "delete_dns_record_tool",
+        "set_request_header_rules_tool",
+        "set_response_header_rules_tool",
+        "set_url_rewrite_rules_tool",
+        "create_page_rule_tool",
+        "update_page_rule_tool",
+        "delete_page_rule_tool",
+        "purge_cache_tool",
+        "create_waf_rule_tool",
+        "update_waf_rule_tool",
+        "delete_waf_rule_tool",
+    }
+)
+
+# Read-only tools allowed to POST. Cloudflare serves analytics only through its
+# GraphQL endpoint, which takes the query in a POST body. Each of these sends one
+# fixed `query` document (never a `mutation`) with the caller's values as variables.
+GRAPHQL_READS = frozenset(
+    {
+        "get_zone_analytics_tool",  # query ZoneAnalytics
+        "get_top_pages_tool",  # query TopPages
+        "get_traffic_by_country_tool",  # query TrafficByCountry
+        "get_security_events_tool",  # query SecurityEvents
+    }
+)
+
+RULESET_ID = "c" * 32
+
+# Arguments that satisfy each read-only tool. Tools that accept zone_name get it
+# rather than zone_id, so the name lookup is exercised too.
+READ_ONLY_CALLS: dict[str, dict[str, Any]] = {
+    "list_zones_tool": {"name": "example.com"},
+    "get_zone_tool": {"zone_name": "example.com"},
+    "list_dns_records_tool": {"zone_id": ZONE_ID, "type": "A"},
+    "get_dns_record_tool": {"zone_id": ZONE_ID, "record_id": RECORD_ID},
+    "list_request_header_rules_tool": {"zone_id": ZONE_ID},
+    "list_response_header_rules_tool": {"zone_id": ZONE_ID},
+    "list_url_rewrite_rules_tool": {"zone_id": ZONE_ID},
+    "list_page_rules_tool": {"zone_id": ZONE_ID},
+    "list_waf_rules_tool": {"zone_name": "example.com"},
+    "get_zone_analytics_tool": {"zone_name": "example.com"},
+    "get_top_pages_tool": {"zone_name": "example.com"},
+    "get_traffic_by_country_tool": {"zone_name": "example.com"},
+    "get_security_events_tool": {"zone_name": "example.com"},
+}
+
+# One ruleset per phase the read tools look for, so each follows through to the
+# second request that fetches the ruleset itself.
+_RULESETS = [
+    {"id": RULESET_ID, "phase": phase, "kind": "zone"}
+    for phase in (
+        "http_request_late_transform",
+        "http_response_headers_transform",
+        "http_request_transform",
+        "http_request_firewall_custom",
+    )
+]
+_COLLECTIONS: dict[str, list[dict[str, Any]]] = {
+    "/zones": [{"id": ZONE_ID, "name": "example.com"}],
+    "/rulesets": _RULESETS,
+    "/dns_records": [{"id": RECORD_ID}],
+    "/pagerules": [{"id": RECORD_ID}],
+}
+
+
+def _cloudflare_reply(*, url: str, **_: Any) -> httpx.Response:
+    """Answer a request the way Cloudflare shapes it: a list for a collection, else an object."""
+    if url == "/graphql":
+        return _mock_cf_response(json_data={"data": {"viewer": {"zones": [{}]}}})
+    for suffix, items in _COLLECTIONS.items():
+        if url.endswith(suffix):
+            return _mock_cf_response(json_data={"success": True, "result": items})
+    return _mock_cf_response(json_data={"success": True, "result": {"id": RULESET_ID, "rules": []}})
+
+
+class TestReadOnlyAnnotation:
+    """Every registered tool is classified, and the reads really only read."""
+
+    @pytest.mark.asyncio
+    async def test_every_tool_is_classified(self) -> None:
+        tools = await mcp.list_tools()
+        assert READ_ONLY.isdisjoint(WRITES)
+        assert {tool.name for tool in tools} == READ_ONLY | WRITES
+        annotated = {
+            tool.name
+            for tool in tools
+            if tool.annotations is not None
+            and tool.annotations.model_dump(by_alias=True).get("readOnlyHint") is True
+        }
+        assert annotated == READ_ONLY
+
+    def test_call_table_covers_every_read(self) -> None:
+        assert set(READ_ONLY_CALLS) == READ_ONLY
+        assert GRAPHQL_READS <= READ_ONLY
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("name", sorted(READ_ONLY))
+    async def test_read_only_tool_sends_only_reads(self, name: str) -> None:
+        """A read sends GET; an analytics read may also POST a GraphQL query."""
+        async with _patch_cf_client() as request:
+            assert isinstance(request, AsyncMock)
+            request.side_effect = _cloudflare_reply
+            await mcp.call_tool(name, READ_ONLY_CALLS[name])
+        assert request.await_count >= 1
+        posts = 0
+        for call in request.await_args_list:
+            method, url = call.kwargs["method"], call.kwargs["url"]
+            if method == "GET":
+                continue
+            assert name in GRAPHQL_READS, f"{name} sent {method} {url}"
+            assert (method, url) == ("POST", "/graphql")
+            assert call.kwargs["json"]["query"].lstrip().startswith("query ")
+            posts += 1
+        assert posts == (1 if name in GRAPHQL_READS else 0)
 
 
 # Error Hierarchy Tests
