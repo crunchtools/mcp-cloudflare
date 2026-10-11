@@ -22,17 +22,20 @@ async def purge_cache(
     You can purge by:
     - Everything (purge_everything=True)
     - Specific URLs (files)
-    - Cache tags (tags) - requires Enterprise
-    - Hostnames (hosts) - requires Enterprise
-    - URL prefixes (prefixes) - requires Enterprise
+    - Cache tags (tags)
+    - Hostnames (hosts)
+    - URL prefixes (prefixes)
+
+    Every method is available on every plan, Free included. Prefer the
+    narrowest one that does the job over purge_everything.
 
     Args:
         zone_id: Zone ID (32-character hex string)
         purge_everything: Purge all cached content (use with caution)
         files: List of URLs to purge (max 30)
-        tags: List of cache tags to purge (Enterprise only)
-        hosts: List of hostnames to purge (Enterprise only)
-        prefixes: List of URL prefixes to purge (Enterprise only)
+        tags: List of cache tags to purge
+        hosts: List of hostnames to purge
+        prefixes: List of URL prefixes to purge
 
     Returns:
         Purge operation result
@@ -47,8 +50,11 @@ async def purge_cache(
             "https://example.com/script.js"
         ])
 
-        # Purge by cache tag (Enterprise)
+        # Purge by cache tag
         purge_cache(zone_id="...", tags=["static-assets", "images"])
+
+        # Purge one hostname, leaving the rest of the zone cached
+        purge_cache(zone_id="...", hosts=["dev.example.com"])
     """
     zone_id = validate_hex_id(zone_id, "zone_id")
     client = get_client()

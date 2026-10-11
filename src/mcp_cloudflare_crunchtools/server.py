@@ -54,7 +54,7 @@ READ_ONLY = {"readOnlyHint": True}
 # Create the FastMCP server
 mcp = FastMCP(
     name="mcp-cloudflare-crunchtools",
-    version="0.7.1",
+    version="0.7.2",
     instructions=(
         "Secure MCP server for Cloudflare DNS, Transform Rules,"
         " Page Rules, Cache, Analytics, WAF, and Access"
@@ -470,15 +470,16 @@ async def purge_cache_tool(
     """Purge cached content from Cloudflare's edge.
 
     Use one of: purge_everything, files, tags, hosts, or prefixes.
-    tags, hosts, and prefixes require Enterprise plan.
+    Every method works on every plan, Free included. Prefer hosts, prefixes,
+    tags or files over purge_everything when only part of a zone is stale.
 
     Args:
         zone_id: Zone ID (32-character hex string)
         purge_everything: Purge all cached content
         files: URLs to purge (max 30)
-        tags: Cache tags to purge (Enterprise)
-        hosts: Hostnames to purge (Enterprise)
-        prefixes: URL prefixes to purge (Enterprise)
+        tags: Cache tags to purge
+        hosts: Hostnames to purge
+        prefixes: URL prefixes to purge
 
     Returns:
         Purge operation result
