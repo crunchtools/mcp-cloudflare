@@ -8,6 +8,15 @@ Entries prior to 2026-09-19 are back-filled from GitHub Release notes (RT #1484)
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-10-11
+
+### Fixed
+
+- `purge_cache` said that purging by hostname, tag or prefix needs an
+  Enterprise plan. Cloudflare offers every purge method on every plan, so an
+  agent on a Free zone was steered to `purge_everything` when a hostname purge
+  would have done. The descriptions now say so.
+
 ## [0.7.1] - 2026-10-10
 
 ### Fixed
