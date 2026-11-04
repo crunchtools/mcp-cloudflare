@@ -79,3 +79,14 @@ check = "manifest_lint_suppression"
 path = "pyproject.toml"
 justification = "TRY003, PLR0913, PLR0917, and TID252 remain as global ignores without individual line-by-line review across every file they touch; real debt until a fleet-wide ruff policy decision resolves whether they are architecturally justified or should be fixed per-callsite. All other ignore entries were tightened to per-file-ignores scoped to their confirmed, reviewed violation sites."
 classification = "accepted_bad_taste"
+
+# Ruff is not missing; it moved. Gourmand's IF001 looks for a literal
+# `ruff-check` hook id, and under python-sdlc (constitution XII, v1.30.0) ruff
+# runs inside the `sdlc-commit` hook, configured by [tool.ruff] in
+# pyproject.toml. Same precedent as trentina.
+[[exceptions]]
+check = "linter_configuration"
+path = ".pre-commit-config.yaml"
+pattern = "ruff-check"
+justification = "ruff runs inside the sdlc-commit hook from python-sdlc (constitution XII v1.30.0), configured by [tool.ruff] in pyproject.toml; Gourmand looks for a literal ruff hook id"
+classification = "by_design"
