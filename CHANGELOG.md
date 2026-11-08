@@ -8,6 +8,29 @@ Entries prior to 2026-09-19 are back-filled from GitHub Release notes (RT #1484)
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-11-07
+
+### Changed
+- `:latest` now moves on a release tag rather than on every push to `main`,
+  and excludes prereleases. The branch tag is published separately. This is
+  what makes the tag mean "the newest release" instead of "whatever merged
+  last", so a container restart can no longer deploy unreviewed work by
+  accident.
+- Toolchain only otherwise: python-sdlc through v0.5.2, constitution v1.31.0,
+  and CodeQL moved inside `sdlc ci`.
+
+### Note
+This is the first release of this service to reach production by **ticket**
+rather than by timer. Its unit now carries `io.crunchtools.deploy=deployer`
+and no `io.containers.autoupdate` label, so it goes live when a Deploy ticket
+names a commit, verified, with an automatic rollback if the MCP handshake
+stops answering.
+
+Sessions already connected to the gateway keep their old tool list until
+someone runs `reconnect_backend cloudflare`. That is crunchtools/trentina#752
+and is not something the deploy robot can fix: it holds no capability to call
+into the gateway, by design.
+
 ## [0.8.1] - 2026-10-31
 
 ### Security
