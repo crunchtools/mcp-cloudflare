@@ -7,12 +7,12 @@
     "url": "https://github.com/crunchtools/mcp-cloudflare",
     "source": "github"
   },
-  "version": "0.8.1",
+  "version": "0.8.2",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "mcp-cloudflare-crunchtools",
-      "version": "0.8.1",
+      "version": "0.8.2",
       "transport": {
         "type": "stdio"
       }
