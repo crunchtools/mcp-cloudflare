@@ -8,6 +8,42 @@ Entries prior to 2026-09-19 are back-filled from GitHub Release notes (RT #1484)
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-09
+
+### Added
+
+- **The client says what it is** — to Cloudflare, of all places. It sent
+  httpx's default `python-httpx/<version>`, which is the agent Cloudflare's own
+  bot protection answers with an HTML challenge page: the failure that cost an
+  afternoon on mcp-wordpress (RT #1596) was Cloudflare challenging that exact
+  string. Requests now carry
+  `User-Agent: mcp-cloudflare-crunchtools/<version> (+<repo url>)`, with the
+  version read from installed package metadata.
+
+### Fixed
+
+- **The response ceiling is now a ceiling.** It read the `content-length`
+  header and nothing else, and that header is optional — a GraphQL analytics
+  reply is exactly the kind of body that arrives chunked. Bodies are read in
+  bounded pieces now, measured before each chunk is copied in.
+
+- **An error says which site answered, and with what.** A non-JSON body came
+  back as `Invalid JSON response: Expecting value: line 1 column 1 (char 0)`,
+  with nothing to act on. It now names the method, the URL, the status, the
+  content-type and a short body snippet. Cloudflare's own `errors[]` shape is
+  used exactly as before.
+
+### Changed
+
+- The suite's HTTP patch drives `build_request` and `send` rather than
+  `request`, because the client now streams; it keeps the old interface so the
+  assertions on what a caller passed still mean what they did. The new
+  `tests/test_http_contract.py` uses a real client over `httpx.MockTransport`,
+  because the agent string and the bounded read are the client's own behaviour.
+
+- Inherits constitution v1.36.0, whose MCP Server profile 1.8.0 states the
+  outbound HTTP contract (RT #1601).
+
 ## [0.8.2] - 2026-11-07
 
 ### Changed

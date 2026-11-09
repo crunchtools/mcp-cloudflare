@@ -2,9 +2,9 @@
 
 > **Version:** 1.2.0
 > **Ratified:** 2026-03-03
-> **Amended:** 2026-10-10
+> **Amended:** 2026-11-09
 > **Status:** Active
-> **Inherits:** [crunchtools/constitution](https://github.com/crunchtools/constitution) v1.31.0
+> **Inherits:** [crunchtools/constitution](https://github.com/crunchtools/constitution) v1.36.0
 > **Profile:** MCP Server
 
 This file holds what is specific to mcp-cloudflare. The fleet rules and the
@@ -22,7 +22,8 @@ restated here.
   hex strings; DNS record and rule inputs go through Pydantic models.
   `ZoneNotFoundError` truncates long identifiers.
 - **API:** Bearer token header, never the URL; requests time out after 30s;
-  responses are capped at 10MB.
+  responses are capped at 10MB while reading, not from the `content-length`
+  header a chunked GraphQL analytics reply need not send.
 
 ## Single Account
 
