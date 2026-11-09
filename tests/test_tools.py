@@ -2,7 +2,6 @@
 
 import os
 from typing import Any
-from unittest.mock import AsyncMock
 
 import httpx
 import pytest
@@ -264,12 +263,11 @@ class TestReadOnlyAnnotation:
     async def test_read_only_tool_sends_only_reads(self, name: str) -> None:
         """A read sends GET; an analytics read may also POST a GraphQL query."""
         async with _patch_cf_client() as request:
-            assert isinstance(request, AsyncMock)
             request.side_effect = _cloudflare_reply
             await mcp.call_tool(name, READ_ONLY_CALLS[name])
-        assert request.await_count >= 1
+        assert request.call_count >= 1
         posts = 0
-        for call in request.await_args_list:
+        for call in request.call_args_list:
             method, url = call.kwargs["method"], call.kwargs["url"]
             if method == "GET":
                 continue
@@ -574,7 +572,7 @@ class TestAccessTools:
             result = await get_access_organization(zone_id=ZONE_ID)
         assert result["enabled"] is True
         assert result["organization"]["auth_domain"] == "team.cloudflareaccess.com"
-        assert request.await_args.kwargs["url"] == f"{ACCESS}/organizations"
+        assert request.call_args.kwargs["url"] == f"{ACCESS}/organizations"
 
     @pytest.mark.asyncio
     async def test_organization_absent_means_zero_trust_is_off(self) -> None:
@@ -592,7 +590,7 @@ class TestAccessTools:
             request.side_effect = _access_reply({"id": APP_ID, "aud": "tag"})
             result = await get_access_app(zone_id=ZONE_ID, app_id=APP_ID)
         assert result["app"]["aud"] == "tag"
-        assert request.await_args.kwargs["url"] == f"{ACCESS}/apps/{APP_ID}"
+        assert request.call_args.kwargs["url"] == f"{ACCESS}/apps/{APP_ID}"
 
     @pytest.mark.asyncio
     async def test_list_access_apps_follows_pages(self) -> None:
@@ -612,7 +610,7 @@ class TestAccessTools:
                 page(2, "two"),
             ]
             result = await list_access_apps(zone_id=ZONE_ID)
-        assert [call.kwargs["params"]["page"] for call in request.await_args_list[1:]] == [1, 2]
+        assert [call.kwargs["params"]["page"] for call in request.call_args_list[1:]] == [1, 2]
         assert result == {"apps": [{"id": "one"}, {"id": "two"}], "complete": True}
 
     @pytest.mark.asyncio
@@ -631,7 +629,7 @@ class TestAccessTools:
                 zone_id=ZONE_ID, name="Dev", domain="dev.example.com", session_duration="720h"
             )
         assert result["app"]["id"] == APP_ID
-        sent = request.await_args.kwargs
+        sent = request.call_args.kwargs
         assert (sent["method"], sent["url"]) == ("POST", f"{ACCESS}/apps")
         assert sent["json"] == {
             "type": "self_hosted",
@@ -673,7 +671,7 @@ class TestAccessTools:
                 exclude=[{"ip": "203.0.113.0/24"}],
             )
         assert result["policy"]["id"] == POLICY_ID
-        sent = request.await_args.kwargs
+        sent = request.call_args.kwargs
         assert sent["url"] == f"{ACCESS}/apps/{APP_ID}/policies"
         assert sent["json"] == {
             "name": "Owner",
@@ -722,7 +720,7 @@ class TestAccessTools:
                 decision="bypass",
                 include=[{"everyone": True}],
             )
-        assert request.await_args.kwargs["json"]["include"] == [{"everyone": {}}]
+        assert request.call_args.kwargs["json"]["include"] == [{"everyone": {}}]
 
     @pytest.mark.asyncio
     async def test_list_access_policies(self) -> None:
@@ -739,7 +737,7 @@ class TestAccessTools:
             policy = await delete_access_policy(zone_id=ZONE_ID, app_id=APP_ID, policy_id=POLICY_ID)
         assert app == {"deleted": True, "id": APP_ID}
         assert policy == {"deleted": True, "id": POLICY_ID}
-        sent = [(call.kwargs["method"], call.kwargs["url"]) for call in request.await_args_list]
+        sent = [(call.kwargs["method"], call.kwargs["url"]) for call in request.call_args_list]
         assert ("DELETE", f"{ACCESS}/apps/{APP_ID}") in sent
         assert ("DELETE", f"{ACCESS}/apps/{APP_ID}/policies/{POLICY_ID}") in sent
 
