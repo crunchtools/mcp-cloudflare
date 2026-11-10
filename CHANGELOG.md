@@ -8,6 +8,19 @@ Entries prior to 2026-09-19 are back-filled from GitHub Release notes (RT #1484)
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-11-10
+
+### Fixed
+
+- The container installed its dependencies from a fresh resolve instead of
+  from `uv.lock`. `pip install .` reads only `pyproject.toml`'s floor pins, so
+  the image shipped whatever had been released that morning -- a dependency
+  set no test had ever run against. The builder now installs a
+  `uv export --frozen` of the committed, Dependabot-maintained lock with
+  `--no-deps`, so the image matches what CI tested. Same bug as mcp-gemini
+  (RT#1564), which caused a prod outage when google-genai 3.0.0 reached
+  production untested.
+
 ## [0.9.0] - 2026-11-09
 
 ### Added
