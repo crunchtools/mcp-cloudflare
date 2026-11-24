@@ -105,3 +105,6 @@ skip = ["semgrep"]
 [tool.sdlc.push.pytest]
 env = { CLOUDFLARE_API_TOKEN = "test_token_for_ci" }
 
+
+[tool.sdlc]
+repo-kinds = ["mcp-server"]
